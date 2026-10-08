@@ -10,17 +10,6 @@ app.use(express.static(path.join(__dirname, "..")));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-wss.on("connection", (socket) => {
-    console.log(`Client connected (${wss.clients.size})`);
 
-    socket.on("message", (data) => {
-        // Broadcast to everyone
-        for (const client of wss.clients) {
-            if (client.readyState === 1) client.send(data.toString());
-        }
-    });
-
-    socket.on("close", () => console.log(`Client disconnected (${wss.clients.size})`));
-});
 
 server.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
