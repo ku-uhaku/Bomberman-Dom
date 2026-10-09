@@ -10,6 +10,7 @@ const cellSize = 32;
 const wallFrames = [[0, 0]];
 const pillarFrames = [[96, 0]];
 const windowFrames = [[128, 0]];
+const drawersFrames = [[160, 0]];
 const floorFrames = [[32, 0]];
 const blockFrames = [[64, 0]];
 const bombFrames = [[0, 32], [32, 32]];
@@ -21,6 +22,7 @@ const cellSprites = {
 	"1": wallFrames,
 	"2": pillarFrames,
 	"3": windowFrames,
+	"4": drawersFrames,
 	"X": blockFrames,
 };
 
@@ -31,7 +33,7 @@ const mockMap = [
 	"3...X...1",
 	"1.11.11.1",
 	"3X....X.1",
-	"112111211",
+	"112144211",
 ];
 
 function createSprite(frames, key) {
