@@ -1,4 +1,4 @@
-const MAPLVL1 = {
+const level1 = {
   name: "map1",
   map: [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -13,4 +13,4 @@ const MAPLVL1 = {
   height: 7,
 };
 
-export default MAPLVL1;
+export default level1;
