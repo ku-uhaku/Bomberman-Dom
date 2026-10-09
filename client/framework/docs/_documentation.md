@@ -36,17 +36,19 @@ createApp(() => el(App), document.querySelector("#root"));
 
 ### Frame loop
 
-`onFrame(cb)` runs `cb(time, delta)` every animation frame, right after any pending re-render, and returns a function that stops it. Use it for game loops instead of calling `requestAnimationFrame` yourself:
+Override `tick(delta)` (milliseconds since the previous frame) for per-frame work — game logic, sprite animation, FPS counters. The framework runs it every animation frame, right after any pending re-render, for as long as the component is mounted. No wiring needed:
 
 ```js
-import { onFrame } from "../index.js";
-
-const stop = onFrame((time, delta) => {
-  // move sprites, update the FPS counter
-});
+class Sprite extends Component {
+  tick(delta) {
+    // move sprites, update the FPS counter
+  }
+}
 ```
 
-Never put per-frame values (positions, transforms) in state or props — write them on `ref`-captured nodes inside `onFrame`.
+The shared loop sleeps when no mounted component implements `tick()` and nothing is pending.
+
+Never put per-frame values (positions, transforms) in state or props — write them on `ref`-captured nodes inside `tick()`.
 
 ---
 

@@ -64,6 +64,10 @@ class TimerPage extends Component {
 }
 ```
 
+## Frame ticks
+
+Components that implement `tick(delta)` are called every animation frame while mounted — after any pending render. The instance persists across re-renders exactly like `attach()`, so per-frame cursor data (animation index, interpolation state) can live in plain instance fields.
+
 ## Component instance reuse
 
 The framework keeps component instances alive across re-renders. Props are updated on the existing instance rather than creating a new one each time. This means `attach()` only runs once per mount, and instance properties (like timers or subscriptions set in `attach()`) persist until `detach()` is called.

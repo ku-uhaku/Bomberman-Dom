@@ -3,6 +3,8 @@ import { diff, patch } from "./virtualDOM/diff.js";
 import {
 	VDOMToInstance,
 	cleanupDetachedComponents,
+	tickComponents,
+	hasTickers,
 } from "./component/componentManager.js";
 
 let rootElement; // html root like #root
@@ -20,6 +22,7 @@ export function createApp(rootComponent, mount) {
 	if (cachedVDOM == null) throw new Error("mini-framework: root is null");
 	rootElement = VDOMtoDOM(cachedVDOM);
 	mount.appendChild(rootElement);
+	ensureLoop(); // components mounted with tick() need the loop running
 }
 
 /**
@@ -33,17 +36,10 @@ export function reRender() {
 }
 
 /**
- * Run cb(time, delta) every frame after the pending render. Returns an unsubscribe fn.
+ * Shared animation-frame loop: renders pending work, then ticks components.
  */
-const frameCallbacks = new Set();
 let rafId = 0;
 let lastTime = 0;
-
-export function onFrame(cb) { // TODO: instead of this global tick function, add "tick()" to Component class
-	frameCallbacks.add(cb);
-	ensureLoop();
-	return () => frameCallbacks.delete(cb);
-}
 
 function ensureLoop() {
 	if (!rafId) rafId = requestAnimationFrame(tick);
@@ -58,9 +54,9 @@ function tick(time) {
 		pending = false;
 		renderTree();
 	}
-	for (const cb of [...frameCallbacks]) cb(time, delta);
+	tickComponents(delta);
 
-	if (pending || frameCallbacks.size) ensureLoop();
+	if (pending || hasTickers()) ensureLoop();
 }
 
 /**

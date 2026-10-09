@@ -1,15 +1,7 @@
-import { el, Component, onFrame } from "../framework/index.js";
+import { el, Component } from "../framework/index.js";
 
 const FPS = 4;
 const FRAME_MS = 1000 / FPS;
-
-const mounted = new Set();
-let stopTicker = null;
-
-function ticker(_time, delta) {
-	// one global RequestAnimationFrame updater
-	for (const inst of mounted) inst.tick(delta);
-}
 
 export class AnimatedImage extends Component {
 	constructor(props) {
@@ -22,19 +14,6 @@ export class AnimatedImage extends Component {
 		this.lastAtlas = null;
 		this.lastCellW = null;
 		this.lastCellH = null;
-	}
-
-	attach() {
-		mounted.add(this);
-		if (!stopTicker) stopTicker = onFrame(ticker);
-	}
-
-	detach() {
-		mounted.delete(this);
-		if (mounted.size === 0 && stopTicker) {
-			stopTicker();
-			stopTicker = null;
-		}
 	}
 
 	render() {

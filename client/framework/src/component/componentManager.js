@@ -1,6 +1,7 @@
 import { Component } from "./component.js";
 
 const instances = new Map(); // id: instance
+const tickers = new Set(); // components that override tick()
 
 /**
  * comvert VDOM nodes {type, props, children} to a Component class instance
@@ -23,6 +24,7 @@ export function VDOMToInstance(node, path, seen) {
 		if (!instance) {
 			// new Component
 			instance = new node.type(node.props || {});
+			if (instance.tick !== Component.prototype.tick) tickers.add(instance);
 			instance.attach();
 			instances.set(id, instance);
 		} else {
@@ -59,6 +61,15 @@ export function cleanupDetachedComponents(seen) {
 		if (!seen.has(id)) {
 			instance.detach();
 			instances.delete(id);
+			tickers.delete(instance);
 		}
 	}
+}
+
+export function tickComponents(delta) {
+	for (const instance of tickers) instance.tick(delta);
+}
+
+export function hasTickers() {
+	return tickers.size > 0;
 }

@@ -42,6 +42,7 @@ It's deeply reactive (nested objects work too), and re-renders are batched: chan
 - `render()` — required. Returns the element(s) for this component.
 - `attach()` — optional. Called when the component instance is created, before `render()`.
 - `detach()` — optional. Called when the component is removed.
+- `tick(delta)` — optional. Called every animation frame while mounted, after any pending render. Use for game loops and animation.
 
 ```js
 class MyPage extends Component {

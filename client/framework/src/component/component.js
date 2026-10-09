@@ -17,6 +17,8 @@ export class Component {
 
 	detach() {}
 
+	tick(delta) {}
+
 	render() {
 		throw new Error("Implement");
 	}
