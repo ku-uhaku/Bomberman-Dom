@@ -1,0 +1,6 @@
+.animated-image {
+    display: inline-block;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+}
+
