@@ -39,7 +39,7 @@ const frameCallbacks = new Set();
 let rafId = 0;
 let lastTime = 0;
 
-export function onFrame(cb) {
+export function onFrame(cb) { // TODO: instead of this global tick function, add "tick()" to Component class
 	frameCallbacks.add(cb);
 	ensureLoop();
 	return () => frameCallbacks.delete(cb);

@@ -6,8 +6,8 @@ import { GamePage } from "./pages/game.js";
 
 class HomePage extends Component {
 	render() {
-		return el("main", {}, [
-			el("h2", {}, "Bomberman"),
+		return el("main", {style:"display:flex; flex-direction:column; align-items:center"}, [
+			el("img", {src:"/assets/images/title.png", width:"500px"}),
 			el("button", { onclick: () => navigate("/nickname") }, "Nickname"),
 			el("button", { onclick: () => navigate("/lobby") }, "Lobby"),
 			el("button", { onclick: () => navigate("/game") }, "Game preview"),

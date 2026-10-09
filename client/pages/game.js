@@ -27,13 +27,16 @@ const cellSprites = {
 };
 
 const mockMap = [
-	"111311211",
-	"1..X...X3",
-	"1.11.13.1",
-	"3...X...1",
-	"1.11.11.1",
-	"3X....X.1",
-	"112144211",
+	"1121312411131211",
+	"1..X..X..X..X..1",
+	"1.1.1.2.1.1.1..4",
+	"1X..X..X..X.X..1",
+	"1.1.1.1.1.1.1..1",
+	"4..X.X..X..X...1",
+	"1.1.1.1.1.1.1..1",
+	"1X..X..X.X..X..1",
+	"1..............1",
+	"1211311144132111",
 ];
 
 function createSprite(frames, key) {
@@ -59,6 +62,9 @@ function createToken(frames, col, row, key) {
 
 export class GamePage extends Component {
 	render() {
+		const columnCount = mockMap[0].length;
+		if (mockMap.some((line) => line.length !== columnCount))
+			throw new Error("mockMap: all rows must have the same length");
 		const boardCells = [];
 		mockMap.forEach((line, row) => {
 			[...line].forEach((cell, col) => {
@@ -71,7 +77,7 @@ export class GamePage extends Component {
 			"div",
 			{
 				class: "game-board",
-				style: "display:grid;grid-template-columns:repeat(9,32px);position:relative;width:max-content;margin:16px;transform:scale(4);transform-origin:top left",
+				style: `display:grid;grid-template-columns:repeat(${columnCount},32px);position:relative;width:max-content;margin:16px;transform:scale(2);transform-origin:top left`,
 			},
 			[
 				...boardCells,
