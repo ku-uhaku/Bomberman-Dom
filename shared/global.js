@@ -45,6 +45,17 @@ export const msg = {
   roundEnd: "round_end",
 };
 
+export const event_names = {
+  bomb: "bomb",
+  boxDestroyed: "box_destroyed",
+  powerupDropped: "powerup_dropped",
+  explode: "explode",
+  powerupPicked: "powerup_picked",
+  hit: "hit",
+  died: "died",
+  gameOver: "game_over",
+};
+
 export function toCol(i) {
   return i % cols;
 }

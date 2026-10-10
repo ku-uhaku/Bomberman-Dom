@@ -1,4 +1,4 @@
-import { World } from "./types.js";
+import { World } from "./types/World.js";
 
 export function createWorld(players) {
   return new World(players);

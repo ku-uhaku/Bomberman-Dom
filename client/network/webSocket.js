@@ -15,9 +15,7 @@ export class AppWebSocket {
     }
 
     connect() {
-        // Implementation for connecting to the WebSocket server
         this.socket = new window.WebSocket(this.getWebSocketURL());
-        // console.log("Connecting to WebSocket server...");   
         return new Promise((resolve, reject) => {
             this.socket.onopen = () => {
                 console.log("WebSocket connection established");

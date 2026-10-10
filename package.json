@@ -2,9 +2,9 @@
   "name": "bomberman-dom",
   "version": "1.0.0",
   "description": "",
-  "main": "server/index.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node server/index.js"
+    "start": "node server/server.js"
   },
   "repository": {
     "type": "git",
