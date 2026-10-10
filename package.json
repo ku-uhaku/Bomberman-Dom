@@ -1,23 +1,8 @@
 {
-  "name": "bomberman-dom",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server/server.js",
+  "type": "module",
   "scripts": {
     "start": "node server/server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ku-uhaku/Bomberman-Dom.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module",
-  "bugs": {
-    "url": "https://github.com/ku-uhaku/Bomberman-Dom/issues"
-  },
-  "homepage": "https://github.com/ku-uhaku/Bomberman-Dom#readme",
   "dependencies": {
     "ws": "^8.22.0"
   }

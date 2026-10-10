@@ -7,10 +7,8 @@ import {
   iFrames,
   blastRange,
   caps,
-  toIdx,
-  toCenterX,
-  toCenterY,
 } from "../../../shared/global.js";
+import { toIdx, toCenterX, toCenterY } from "../../../shared/util.js";
 
 export class Player {
   constructor({ id, nickname, spawn }) {

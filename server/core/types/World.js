@@ -6,10 +6,8 @@ import {
   explosionTtl,
   powerupChance,
   event_names,
-  toCol,
-  toRow,
-  toIdx,
 } from "../../../shared/global.js";
+import { toCol, toRow, toIdx } from "../../../shared/util.js";
 import { createMap } from "../map.js";
 import { Player } from "./Player.js";
 import { Bomb } from "./Bomb.js";

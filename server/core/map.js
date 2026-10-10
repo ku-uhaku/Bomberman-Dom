@@ -1,4 +1,5 @@
-import { cols, rows, maxPlayers, toIdx } from "../../shared/global.js";
+import { cols, rows, maxPlayers } from "../../shared/global.js";
+import { shuffle, toIdx } from "../../shared/util.js";
 
 const mapTemplate = [
   "###############",
@@ -53,14 +54,6 @@ function parseMap() {
     });
   });
   return { walls, open };
-}
-
-function shuffle(items) {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
-  return items;
 }
 
 export function createMap(playerCount) {
