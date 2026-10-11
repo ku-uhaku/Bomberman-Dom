@@ -1,6 +1,8 @@
 import http from "node:http";
 import { serveStatic } from "./static.js";
 import { WebSocketServer } from "ws";
+import { msg } from "../shared/global.js";
+import { Lobby } from "./lobby.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -24,6 +26,52 @@ const server = http.createServer(async (req, res) => {
   respond(res, 404, "404 Not Found");
 });
 
-const wss = new WebSocketServer({ server });
+function send(socket, obj) {
+  if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(obj));
+}
+
+function sendError(socket, reason) {
+  send(socket, { type: msg.error, reason });
+}
+
+const lobby = new Lobby(send);
+
+function onMessage(socket, raw) {
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return sendError(socket, "invalid json");
+  }
+  if (typeof data !== "object" || data === null || typeof data.type !== "string")
+    return sendError(socket, "invalid message");
+
+  switch (data.type) {
+    case msg.join: {
+      if (typeof data.nickname !== "string")
+        return sendError(socket, "nickname must be a string");
+      const result = lobby.join(socket, data.nickname);
+      if (!result.ok) return sendError(socket, result.reason);
+      send(socket, { type: msg.joined, playerId: result.playerId });
+      return;
+    }
+    default:
+      return sendError(socket, "unknown message type");
+  }
+}
+
+const wss = new WebSocketServer({
+  server,
+  maxPayload: 4096,
+  verifyClient: (info) => {
+    const origin = info.req.headers.origin;
+    if (!origin) return true; // non-browser client (curl/test): no origin to check
+    return origin === `http://${info.req.headers.host}`;
+  },
+});
+
+wss.on("connection", (socket) => {
+  socket.on("message", (raw) => onMessage(socket, raw.toString()));
+});
 
 server.listen(PORT, () => console.log(`bomberman-dom on http://localhost:${PORT}`));
