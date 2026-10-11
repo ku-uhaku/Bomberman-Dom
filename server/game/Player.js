@@ -1,4 +1,4 @@
-import { lives, iFrames } from "../shared/global.js";
+import { lives, iFrames } from "../../shared/global.js";
 
 export class Player {
     constructor(name, id = null) {

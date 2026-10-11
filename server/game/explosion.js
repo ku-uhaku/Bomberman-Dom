@@ -1,4 +1,4 @@
-import { explosionTtl } from "../shared/global.js";
+import { explosionTtl } from "../../shared/global.js";
 
 export class Explosion {
     // tiles: every { x, y } tile the flames cover (centre included)
