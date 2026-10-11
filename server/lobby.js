@@ -5,6 +5,7 @@ export class Lobby {
     this.send = send;
     this.players = new Map(); // id -> { id, nickname, socket }
     this.nextId = 1;
+    this.game = null; // set by server: owns the timer machine
   }
 
   get(socket) {
@@ -30,13 +31,13 @@ export class Lobby {
     const id = this.nextId++;
     this.players.set(id, { id, nickname: name, socket });
     socket.on("close", () => this.leave(id));
-    this.broadcast();
+    this.game.sync();
     return { ok: true, playerId: id };
   }
 
   leave(id) {
     setTimeout(() => {
-      if (this.players.delete(id)) this.broadcast();
+      if (this.players.delete(id)) this.game.sync();
     }, graceMs);
   }
 
@@ -48,8 +49,8 @@ export class Lobby {
     this.sendAll({
       type: msg.lobby,
       players,
-      queueEndsAt: null,
-      countdownEndsAt: null,
+      queueEndsAt: this.game.queueEndsAt,
+      countdownEndsAt: this.game.countdownEndsAt,
     });
   }
 }

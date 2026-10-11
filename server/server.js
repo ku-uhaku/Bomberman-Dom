@@ -4,6 +4,7 @@ import { WebSocketServer } from "ws";
 import { msg } from "../shared/global.js";
 import { Lobby } from "./lobby.js";
 import { Chat } from "./chat.js";
+import { Game } from "./game.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -37,6 +38,8 @@ function sendError(socket, reason) {
 
 const lobby = new Lobby(send);
 const chat = new Chat(lobby);
+const game = new Game(lobby, send);
+lobby.game = game;
 
 function onMessage(socket, raw) {
   let data;
