@@ -7,9 +7,17 @@ export class Lobby {
     this.nextId = 1;
   }
 
+  get(socket) {
+    for (const p of this.players.values()) if (p.socket === socket) return p;
+    return null;
+  }
+
+  sendAll(obj) {
+    for (const p of this.players.values()) this.send(p.socket, obj);
+  }
+
   join(socket, nickname) {
-    if ([...this.players.values()].some((p) => p.socket === socket))
-      return { ok: false, reason: "already joined" };
+    if (this.get(socket)) return { ok: false, reason: "already joined" };
 
     const name = nickname.trim();
     if (name.length < 1 || name.length > 12)
@@ -37,12 +45,11 @@ export class Lobby {
       id: p.id,
       nickname: p.nickname,
     }));
-    for (const p of this.players.values())
-      this.send(p.socket, {
-        type: msg.lobby,
-        players,
-        queueEndsAt: null,
-        countdownEndsAt: null,
-      });
+    this.sendAll({
+      type: msg.lobby,
+      players,
+      queueEndsAt: null,
+      countdownEndsAt: null,
+    });
   }
 }

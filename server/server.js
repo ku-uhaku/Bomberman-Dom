@@ -3,6 +3,7 @@ import { serveStatic } from "./static.js";
 import { WebSocketServer } from "ws";
 import { msg } from "../shared/global.js";
 import { Lobby } from "./lobby.js";
+import { Chat } from "./chat.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -35,6 +36,7 @@ function sendError(socket, reason) {
 }
 
 const lobby = new Lobby(send);
+const chat = new Chat(lobby);
 
 function onMessage(socket, raw) {
   let data;
@@ -53,6 +55,16 @@ function onMessage(socket, raw) {
       const result = lobby.join(socket, data.nickname);
       if (!result.ok) return sendError(socket, result.reason);
       send(socket, { type: msg.joined, playerId: result.playerId });
+      send(socket, chat.historyPayload());
+      return;
+    }
+    case msg.chat: {
+      const player = lobby.get(socket);
+      if (!player) return sendError(socket, "join first");
+      if (typeof data.text !== "string")
+        return sendError(socket, "text must be a string");
+      const result = chat.submit(player, data.text);
+      if (!result.ok) return sendError(socket, result.reason);
       return;
     }
     default:
