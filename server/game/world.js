@@ -18,16 +18,12 @@ const powerupTypes = ["bombs", "flames", "speed"];
 export class World {
 	constructor(players) {
 		const { walls, blocks, spawns } = createMap(players.length);
-		this.cols = cols;
-		this.rows = rows;
-		this.tile = tile;
 		this.walls = walls;
 		this.blocks = blocks;
 		this.bombs = new Map(); // idx -> Bomb
 		this.explosions = new Map(); // idx -> ttl
 		this.powerups = new Map(); // idx -> type
 		this.players = new Map(); // id -> Player
-		this.time = 0;
 		this.seq = 0;
 		this.over = false;
 
@@ -156,7 +152,6 @@ export class World {
 	// bombReqs: iterable of playerIds requesting a bomb this tick
 	step(dt, inputs, bombReqs) {
 		const events = [];
-		this.time += dt;
 
 		for (const id of bombReqs) this.placeBomb(id, events);
 

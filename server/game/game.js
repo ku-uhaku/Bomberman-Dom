@@ -1,15 +1,15 @@
-import { maxPlayers, queueMs, countdownMs, tickMs, msg, event_names } from "../../shared/global.js";
+import { maxPlayers, queueMs, countdownMs, roundEndMs, tickMs, msg, event_names } from "../../shared/global.js";
 import { World } from "./world.js";
 
 export class Game {
-	constructor(lobby, send) {
+	constructor(lobby) {
 		this.lobby = lobby;
-		this.send = send;
 		this.phase = "idle"; // idle | queue | countdown | playing | over
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
 		this.world = null;
 		this.interval = null; // phase deadline checker (250ms)
+		this.roundTimer = null; // pause after game_over before the next round
 		this.loopTimer = null; // 30Hz simulation loop
 		this.loopAcc = 0;
 		this.loopLast = 0;
@@ -33,7 +33,7 @@ export class Game {
 	evaluate() {
 		const n = this.lobby.players.size;
 		if (n >= maxPlayers) {
-			if (this.phase !== "countdown") this.startCountdown();
+			if (this.phase === "idle" || this.phase === "queue") this.startCountdown();
 		} else if (n >= 2) {
 			if (this.phase === "idle") this.startQueue();
 		} else {
@@ -59,6 +59,10 @@ export class Game {
 		this.phase = "idle";
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
+		if (this.roundTimer) {
+			clearTimeout(this.roundTimer);
+			this.roundTimer = null;
+		}
 		this.stop();
 	}
 
@@ -146,6 +150,17 @@ export class Game {
 			this.stopLoop();
 			this.phase = "over";
 			this.lobby.sendAll({ type: msg.gameOver, winnerId: over.winnerId });
+			this.roundTimer = setTimeout(() => this.endRound(), roundEndMs);
 		}
+	}
+
+	// game_over -> roundEndMs -> back to the lobby, roster kept
+	endRound() {
+		this.roundTimer = null;
+		if (this.phase !== "over") return;
+		this.phase = "idle";
+		this.lobby.sendAll({ type: msg.roundEnd });
+		this.evaluate();
+		this.lobby.broadcast();
 	}
 }

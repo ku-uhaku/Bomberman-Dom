@@ -38,7 +38,7 @@ function sendError(socket, reason) {
 
 const lobby = new Lobby(send);
 const chat = new Chat(lobby);
-const game = new Game(lobby, send);
+const game = new Game(lobby);
 lobby.game = game;
 
 function onMessage(socket, raw) {

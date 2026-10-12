@@ -3,6 +3,7 @@ import { AppWebSocket } from "./network/webSocket.js";
 import { NicknamePage } from "./pages/nickname.js";
 import { LobbyPage } from "./pages/lobby.js";
 import { GamePage } from "./pages/game.js";
+import { msg } from "/shared/global.js";
 
 class HomePage extends Component {
 	render() {
@@ -17,12 +18,18 @@ class HomePage extends Component {
 
 class App extends Component {
 	constructor(props) {
-		super(props);
+		super(props, { playerId: null });
 		this.ws = new AppWebSocket();
+		this.ws.on(msg.joined, (m) => {
+			this.state.playerId = m.playerId;
+		});
+		this.ws.on(msg.start, () => navigate("/game"));
+		this.ws.on(msg.roundEnd, () => navigate("/lobby"));
 	}
 
-	attach() {
-		this.ws.connect();
+	guard(path) {
+		if (path === "/" || path === "/nickname") return true;
+		return this.state.playerId !== null; // /lobby and /game need a joined player
 	}
 
 	render() {
@@ -34,6 +41,8 @@ class App extends Component {
 				"/game": GamePage,
 			},
 			fallback: HomePage,
+			guard: (path) => this.guard(path),
+			ws: this.ws,
 		});
 	}
 }
