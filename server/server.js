@@ -4,7 +4,7 @@ import { WebSocketServer } from "ws";
 import { msg } from "../shared/global.js";
 import { Lobby } from "./lobby.js";
 import { Chat } from "./chat.js";
-import { Game } from "./game.js";
+import { Match } from "./match.js";
 
 const PORT = process.env.PORT || 3000;
 
@@ -38,8 +38,8 @@ function sendError(socket, reason) {
 
 const lobby = new Lobby(send);
 const chat = new Chat(lobby);
-const game = new Game(lobby, send);
-lobby.game = game;
+const match = new Match(lobby, send);
+lobby.match = match;
 
 function onMessage(socket, raw) {
 	let data;
@@ -75,15 +75,15 @@ function onMessage(socket, raw) {
 			if (!player) return sendError(socket, "join first");
 			if (typeof data.x !== "number" || typeof data.y !== "number")
 				return sendError(socket, "input x,y must be numbers");
-			if (game.phase !== "playing") return;
-			game.setInput(player.id, { x: data.x, y: data.y });
+			if (match.phase !== "playing") return;
+			match.setInput(player.id, { x: data.x, y: data.y });
 			return;
 		}
 		case msg.bomb: {
 			const player = lobby.get(socket);
 			if (!player) return sendError(socket, "join first");
-			if (game.phase !== "playing") return;
-			game.requestBomb(player.id);
+			if (match.phase !== "playing") return;
+			match.requestBomb(player.id);
 			return;
 		}
 		default:

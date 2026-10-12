@@ -1,15 +1,15 @@
 import { maxPlayers, queueMs, countdownMs, msg, event_names } from "../shared/global.js";
-import { createWorld, step, toSnapshot } from "./core/engine.js";
+import { Game } from "../game/game.js";
 import { Loop } from "./loop.js";
 
-export class Game {
+export class Match {
 	constructor(lobby, send) {
 		this.lobby = lobby;
 		this.send = send;
 		this.phase = "idle"; // idle | queue | countdown | playing | over
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
-		this.world = null;
+		this.game = null;
 		this.interval = null;
 		this.loop = null;
 		this.inputs = new Map(); // playerId -> { x, y }
@@ -94,14 +94,14 @@ export class Game {
 			id: p.id,
 			nickname: p.nickname,
 		}));
-		this.world = createWorld(players);
+		this.game = new Game(players);
 
 		const map = {
-			walls: [...this.world.walls],
-			blocks: [...this.world.blocks],
+			walls: [...this.game.walls],
+			blocks: [...this.game.blocks],
 		};
 		const startPlayers = {};
-		for (const p of this.world.players.values())
+		for (const p of this.game.players.values())
 			startPlayers[p.id] = { x: Math.round(p.x), y: Math.round(p.y), nickname: p.nickname };
 
 		this.lobby.sendAll({ type: msg.start, map, players: startPlayers });
@@ -111,9 +111,9 @@ export class Game {
 	}
 
 	advance(dt) {
-		const events = step(this.world, dt, this.inputs, this.pendingBombs);
+		const events = this.game.step(dt, this.inputs, this.pendingBombs);
 		this.pendingBombs.clear();
-		this.lobby.sendAll({ type: msg.state, snapshot: toSnapshot(this.world), events });
+		this.lobby.sendAll({ type: msg.state, snapshot: this.game.toSnapshot(), events });
 
 		const over = events.find((e) => e.type === event_names.gameOver);
 		if (over) {
