@@ -70,6 +70,22 @@ function onMessage(socket, raw) {
       if (!result.ok) return sendError(socket, result.reason);
       return;
     }
+    case msg.input: {
+      const player = lobby.get(socket);
+      if (!player) return sendError(socket, "join first");
+      if (typeof data.x !== "number" || typeof data.y !== "number")
+        return sendError(socket, "input x,y must be numbers");
+      if (game.phase !== "playing") return;
+      game.setInput(player.id, { x: data.x, y: data.y });
+      return;
+    }
+    case msg.bomb: {
+      const player = lobby.get(socket);
+      if (!player) return sendError(socket, "join first");
+      if (game.phase !== "playing") return;
+      game.requestBomb(player.id);
+      return;
+    }
     default:
       return sendError(socket, "unknown message type");
   }

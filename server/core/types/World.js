@@ -192,7 +192,7 @@ export class World {
       seq: this.seq++,
       players,
       blocks: [...this.blocks],
-      bombs: [...this.bombs.keys()],
+      bombs: [...this.bombs].map(([idx, bomb]) => ({ i: idx, owner: bomb.owner })),
       explosions: [...this.explosions.keys()],
       powerups: [...this.powerups].map(([idx, type]) => [idx, type]),
     };
