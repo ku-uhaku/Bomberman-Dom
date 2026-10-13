@@ -9,6 +9,13 @@ const characters = [
 	[[0, 96], [32, 96]],
 ];
 
+const keys = {
+	KeyW: [0, -1], ArrowUp: [0, -1],
+	KeyS: [0, 1], ArrowDown: [0, 1],
+	KeyA: [-1, 0], ArrowLeft: [-1, 0],
+	KeyD: [1, 0], ArrowRight: [1, 0],
+};
+
 export class GamePage extends Component {
 	constructor(props) {
 		super(props, { start: null, snap: null });
@@ -16,11 +23,16 @@ export class GamePage extends Component {
 		this.scale = 1;
 		this.tokens = new Map(); // playerId -> node
 		this.buffer = []; // { t, players } snapshots, oldest first
+		this.held = new Set(); // pressed movement key codes
+		this.sent = { x: 0, y: 0 }; // last intent sent
 	}
 
 	attach() {
 		this.onResize = () => this.fit();
+		this.onKey = (e) => this.key(e, e.type === "keydown");
 		window.addEventListener("resize", this.onResize);
+		window.addEventListener("keydown", this.onKey);
+		window.addEventListener("keyup", this.onKey);
 		this.offStart = this.props.ws.on(msg.start, (m) => {
 			this.state.start = m;
 		});
@@ -32,8 +44,35 @@ export class GamePage extends Component {
 
 	detach() {
 		window.removeEventListener("resize", this.onResize);
+		window.removeEventListener("keydown", this.onKey);
+		window.removeEventListener("keyup", this.onKey);
 		this.offStart();
 		this.offState();
+	}
+
+	key(e, down) {
+		if (/^(input|textarea)$/i.test(e.target.tagName)) return;
+		if (e.code === "Space") {
+			e.preventDefault();
+			if (down && !e.repeat) this.props.ws.sendMessage({ type: msg.bomb });
+			return;
+		}
+		const dir = keys[e.code];
+		if (!dir) return;
+		e.preventDefault();
+		if (down) this.held.add(e.code);
+		else this.held.delete(e.code);
+		let x = 0;
+		let y = 0;
+		for (const code of this.held) {
+			x += keys[code][0];
+			y += keys[code][1];
+		}
+		x = Math.sign(x);
+		y = Math.sign(y);
+		if (x === this.sent.x && y === this.sent.y) return;
+		this.sent = { x, y };
+		this.props.ws.sendMessage({ type: msg.input, x, y });
 	}
 
 	fit() {
