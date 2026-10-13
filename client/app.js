@@ -6,6 +6,7 @@ import { GamePage } from "./pages/game.js";
 import { msg } from "/shared/global.js";
 
 class HomePage extends Component {
+	// TODO: temp, app should start in /nickname -> /lobby <-> /game
 	render() {
 		return el("main", {style:"display:flex; flex-direction:column; align-items:center"}, [
 			el("img", {src:"/assets/images/title.png", width:"500px"}),

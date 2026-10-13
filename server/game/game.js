@@ -4,11 +4,11 @@ import { World } from "./world.js";
 export class Game {
 	constructor(lobby) {
 		this.lobby = lobby;
-		this.phase = "idle"; // idle | queue | countdown | playing | over
+		this.gameState = "idle"; // idle | queue | countdown | playing | over
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
 		this.world = null;
-		this.interval = null; // phase deadline checker (250ms)
+		this.interval = null; // gameState deadline checker (250ms)
 		this.roundTimer = null; // pause after game_over before the next round
 		this.loopTimer = null; // 30Hz simulation loop
 		this.loopAcc = 0;
@@ -18,18 +18,18 @@ export class Game {
 	}
 
 	sync() {
-		if (this.phase !== "playing") this.evaluate();
-		this.lobby.broadcast();
+		if (this.gameState !== "playing") this.evaluate();
+		this.lobby.sendLobby();
 	}
 
 	evaluate() {
 		const n = this.lobby.players.size;
 		if (n >= maxPlayers) {
-			if (this.phase === "idle" || this.phase === "queue") this.startCountdown();
+			if (this.gameState === "idle" || this.gameState === "queue") this.startCountdown();
 		} else if (n >= 2) {
-			if (this.phase === "idle") {
+			if (this.gameState === "idle") {
 				// start queue
-				this.phase = "queue";
+				this.gameState = "queue";
 				this.countdownEndsAt = null;
 				this.queueEndsAt = Date.now() + queueMs;
 				this.stop();
@@ -41,7 +41,7 @@ export class Game {
 	}
 
 	startCountdown() {
-		this.phase = "countdown";
+		this.gameState = "countdown";
 		this.queueEndsAt = null;
 		this.countdownEndsAt = Date.now() + countdownMs;
 		// run
@@ -50,7 +50,7 @@ export class Game {
 	}
 
 	reset() {
-		this.phase = "idle";
+		this.gameState = "idle";
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
 		if (this.roundTimer) {
@@ -69,11 +69,11 @@ export class Game {
 
 	tick() {
 		const now = Date.now();
-		if (this.phase === "queue" && now >= this.queueEndsAt) {
+		if (this.gameState === "queue" && now >= this.queueEndsAt) {
 			if (this.lobby.players.size >= 2) this.startCountdown();
 			else this.reset();
-			this.lobby.broadcast();
-		} else if (this.phase === "countdown" && now >= this.countdownEndsAt) {
+			this.lobby.sendLobby();
+		} else if (this.gameState === "countdown" && now >= this.countdownEndsAt) {
 			this.beginMatch();
 		}
 	}
@@ -92,21 +92,32 @@ export class Game {
 		}
 	}
 
-	// accumulator: never drop a tick, clamp after a long stall
 	loopTick() {
 		const now = Date.now();
 		this.loopAcc += now - this.loopLast;
 		this.loopLast = now;
 		if (this.loopAcc > 1000) this.loopAcc = 1000;
 		while (this.loopAcc >= tickMs) {
-			this.advance(tickMs);
 			this.loopAcc -= tickMs;
+
+			// game loop
+			const events = this.world.step(tickMs, this.inputs, this.pendingBombs);
+			this.pendingBombs.clear();
+			this.lobby.sendAll({ type: msg.state, snapshot: this.world.syncClient(), events });
+
+			const over = events.find((e) => e.type === event_names.gameOver);
+			if (over) {
+				this.stopLoop();
+				this.gameState = "over";
+				this.lobby.sendAll({ type: msg.gameOver, winnerId: over.winnerId });
+				this.roundTimer = setTimeout(() => this.endRound(), roundEndMs);
+			}
 		}
 	}
 
 	beginMatch() {
 		this.stop();
-		this.phase = "playing";
+		this.gameState = "playing";
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
 
@@ -129,27 +140,13 @@ export class Game {
 		this.startLoop();
 	}
 
-	advance(dt) {
-		const events = this.world.step(dt, this.inputs, this.pendingBombs);
-		this.pendingBombs.clear();
-		this.lobby.sendAll({ type: msg.state, snapshot: this.world.toSnapshot(), events });
-
-		const over = events.find((e) => e.type === event_names.gameOver);
-		if (over) {
-			this.stopLoop();
-			this.phase = "over";
-			this.lobby.sendAll({ type: msg.gameOver, winnerId: over.winnerId });
-			this.roundTimer = setTimeout(() => this.endRound(), roundEndMs);
-		}
-	}
-
-	// game_over -> roundEndMs -> back to the lobby, roster kept
+	// game_over -> roundEndMs -> back to the lobby
 	endRound() {
 		this.roundTimer = null;
-		if (this.phase !== "over") return;
-		this.phase = "idle";
+		if (this.gameState !== "over") return;
+		this.gameState = "idle";
 		this.lobby.sendAll({ type: msg.roundEnd });
 		this.evaluate();
-		this.lobby.broadcast();
+		this.lobby.sendLobby();
 	}
 }

@@ -1,7 +1,7 @@
 import { cols, rows, maxPlayers } from "../../shared/global.js";
 import { shuffle, toIdx } from "../../shared/util.js";
 
-const mapTemplate = [
+const mapTemplate = [ // match global.js cols/rows
   "###############",
   "#.............#",
   "#.#.#.#.#.#.#.#",
@@ -26,8 +26,7 @@ const spawns = [ // 4 corners
 
 const blockDensity = 0.6;
 
-// spawn cell plus 2 cells inward along both edges, so a bomb dropped
-// on the spawn leaves the player room to escape
+// spawn cell plus 2 cells inward along both edges to not trap player
 function safeZone([col, row]) {
   const cells = new Set([toIdx(col, row)]);
   const dirCol = col < cols / 2 ? 1 : -1;
@@ -65,9 +64,9 @@ export function createMap(playerCount) {
   for (const spawn of spawns.slice(0, playerCount))
     for (const idx of safeZone(spawn)) safe.add(idx);
 
-  const eligible = open.filter((idx) => !safe.has(idx));
+  const canBeFilled = open.filter((idx) => !safe.has(idx));
   const blocks = new Set(
-    shuffle(eligible).slice(0, Math.floor(eligible.length * blockDensity))
+    shuffle(canBeFilled).slice(0, Math.floor(canBeFilled.length * blockDensity))
   );
 
   return { walls, blocks, spawns: spawns.slice(0, playerCount) };

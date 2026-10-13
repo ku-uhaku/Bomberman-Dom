@@ -33,6 +33,7 @@ export class World {
 		});
 	}
 
+	// tiles that player overlaps (even if empty)
 	boxTiles(x, y) {
 		const c0 = Math.max(0, Math.floor((x - half) / tile));
 		const c1 = Math.min(cols - 1, Math.floor((x + half - 1e-6) / tile));
@@ -44,7 +45,7 @@ export class World {
 		return tiles;
 	}
 
-	// tiles the player already overlaps (their own bomb) don't block them out of it
+	// tiles the player already overlaps (their own bomb) don't block them
 	collides(x, y, current = []) {
 		if (
 			x - half < 0 ||
@@ -53,6 +54,7 @@ export class World {
 			y + half > rows * tile
 		)
 			return true;
+		
 		// is solid
 		return this.boxTiles(x, y).some(
 			(idx) =>
@@ -178,7 +180,7 @@ export class World {
 		return events;
 	}
 
-	toSnapshot() {
+	syncClient() {
 		const players = {};
 		for (const player of this.players.values())
 			players[player.id] = player.toWire();

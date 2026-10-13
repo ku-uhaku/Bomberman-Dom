@@ -8,6 +8,21 @@ import { Game } from "./game/game.js";
 
 const PORT = process.env.PORT || 3000;
 
+const lobby = new Lobby(send);
+const chat = new Chat(lobby);
+const game = new Game(lobby);
+lobby.game = game;
+
+// socket helpers
+function send(socket, obj) {
+	if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(obj));
+}
+
+function sendError(socket, reason) {
+	send(socket, { type: msg.error, reason });
+}
+
+// server helpers
 function respond(res, status, body) {
 	res.writeHead(status, { "content-type": "text/plain; charset=utf-8" });
 	res.end(body);
@@ -27,19 +42,6 @@ const server = http.createServer(async (req, res) => {
 
 	respond(res, 404, "404 Not Found");
 });
-
-function send(socket, obj) {
-	if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(obj));
-}
-
-function sendError(socket, reason) {
-	send(socket, { type: msg.error, reason });
-}
-
-const lobby = new Lobby(send);
-const chat = new Chat(lobby);
-const game = new Game(lobby);
-lobby.game = game;
 
 function onMessage(socket, raw) {
 	let data;
@@ -62,7 +64,7 @@ function onMessage(socket, raw) {
 			return;
 		}
 		case msg.chat: {
-			const player = lobby.get(socket);
+			const player = lobby.findPlayer(socket);
 			if (!player) return sendError(socket, "join first");
 			if (typeof data.text !== "string")
 				return sendError(socket, "text must be a string");
@@ -71,18 +73,18 @@ function onMessage(socket, raw) {
 			return;
 		}
 		case msg.input: {
-			const player = lobby.get(socket);
+			const player = lobby.findPlayer(socket);
 			if (!player) return sendError(socket, "join first");
 			if (typeof data.x !== "number" || typeof data.y !== "number")
 				return sendError(socket, "input x,y must be numbers");
-			if (game.phase !== "playing") return;
+			if (game.gameState !== "playing") return;
 			game.inputs.set(player.id, { x: data.x, y: data.y });
 			return;
 		}
 		case msg.bomb: {
-			const player = lobby.get(socket);
+			const player = lobby.findPlayer(socket);
 			if (!player) return sendError(socket, "join first");
-			if (game.phase !== "playing") return;
+			if (game.gameState !== "playing") return;
 			game.pendingBombs.add(player.id);
 			return;
 		}

@@ -8,7 +8,7 @@ export class Lobby {
 		this.game = null; // set by server: owns the timer machine
 	}
 
-	get(socket) {
+	findPlayer(socket) {
 		for (const p of this.players.values()) if (p.socket === socket) return p;
 		return null;
 	}
@@ -18,7 +18,7 @@ export class Lobby {
 	}
 
 	join(socket, nickname) {
-		if (this.get(socket)) return { ok: false, reason: "already joined" };
+		if (this.findPlayer(socket)) return { ok: false, reason: "already joined" };
 
 		const name = nickname.trim();
 		if (name.length < 1 || name.length > 12)
@@ -41,7 +41,7 @@ export class Lobby {
 		}, graceMs);
 	}
 
-	broadcast() {
+	sendLobby() {
 		const players = [...this.players.values()].map((p) => ({
 			id: p.id,
 			nickname: p.nickname,
