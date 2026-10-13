@@ -1,7 +1,7 @@
 import { msg } from "/shared/global.js";
 
 // payload types a (re)mounting component may replay — everything else is fire-once
-const REPLAY = new Set([msg.lobby, msg.chatHistory]);
+const REPLAY = new Set([msg.lobby, msg.chatHistory, msg.start]);
 
 export class AppWebSocket {
 	constructor() {

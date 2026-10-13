@@ -1,4 +1,5 @@
 /* add future css files here */
+@import url("./game.css");
 @import url("./main.css");
 
 *{
