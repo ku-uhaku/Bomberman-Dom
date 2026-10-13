@@ -11,15 +11,12 @@ export class AppWebSocket {
 		this.last = new Map(); // type -> last payload
 	}
 
-	getWebSocketURL() {
-		const { protocol, host } = window.location;
-		const socketProtocol = protocol === "https:" ? "wss:" : "ws:";
-		return `${socketProtocol}//${host}`;
-	}
-
 	connect() {
 		if (this.openPromise) return this.openPromise;
-		const socket = new window.WebSocket(this.getWebSocketURL());
+		// get web socket url
+		const { protocol, host } = window.location;
+		const socketProtocol = protocol === "https:" ? "wss:" : "ws:";
+		const socket = new window.WebSocket(`${socketProtocol}//${host}`);
 		this.socket = socket;
 		this.openPromise = new Promise((resolve, reject) => {
 			socket.onopen = () => resolve();
@@ -32,7 +29,19 @@ export class AppWebSocket {
 				this.socket = null;
 				this.openPromise = null;
 			};
-			socket.onmessage = (event) => this.dispatch(event.data);
+			socket.onmessage = (event) => {
+				// dispatch
+				let data;
+				try {
+					data = JSON.parse(event.data);
+				} catch {
+					return;
+				}
+				if (!data || typeof data.type !== "string") return;
+				if (REPLAY.has(data.type)) this.last.set(data.type, data);
+				const set = this.handlers.get(data.type);
+				if (set) for (const fn of set) fn(data);
+			};
 		});
 		return this.openPromise;
 	}
@@ -54,18 +63,5 @@ export class AppWebSocket {
 		set.add(fn);
 		if (this.last.has(type)) fn(this.last.get(type));
 		return () => set.delete(fn);
-	}
-
-	dispatch(raw) {
-		let data;
-		try {
-			data = JSON.parse(raw);
-		} catch {
-			return;
-		}
-		if (!data || typeof data.type !== "string") return;
-		if (REPLAY.has(data.type)) this.last.set(data.type, data);
-		const set = this.handlers.get(data.type);
-		if (set) for (const fn of set) fn(data);
 	}
 }

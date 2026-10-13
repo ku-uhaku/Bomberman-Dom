@@ -26,8 +26,4 @@ export class Chat {
 		this.lobby.sendAll({ type: msg.chatMsg, message });
 		return { ok: true };
 	}
-
-	historyPayload() {
-		return { type: msg.chatHistory, messages: this.history };
-	}
 }

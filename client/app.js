@@ -27,11 +27,6 @@ class App extends Component {
 		this.ws.on(msg.roundEnd, () => navigate("/lobby"));
 	}
 
-	guard(path) {
-		if (path === "/" || path === "/nickname") return true;
-		return this.state.playerId !== null; // /lobby and /game need a joined player
-	}
-
 	render() {
 		return el(Router, {
 			routes: {
@@ -41,7 +36,8 @@ class App extends Component {
 				"/game": GamePage,
 			},
 			fallback: HomePage,
-			guard: (path) => this.guard(path),
+			// guard: /lobby and /game need a joined player
+			guard: (path) => path === "/" || path === "/nickname" || this.state.playerId !== null,
 			ws: this.ws,
 		});
 	}

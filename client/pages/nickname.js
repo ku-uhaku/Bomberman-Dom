@@ -4,19 +4,17 @@ import { msg } from "/shared/global.js";
 export class NicknamePage extends Component {
 	constructor(props) {
 		super(props, { nickname: "", error: "", busy: false });
-		this.onJoined = () => {
-			this.state.busy = false;
-			navigate("/lobby");
-		};
-		this.onError = (m) => {
-			this.state.busy = false;
-			this.state.error = m.reason;
-		};
 	}
 
 	attach() {
-		this.offJoined = this.props.ws.on(msg.joined, this.onJoined);
-		this.offError = this.props.ws.on(msg.error, this.onError);
+		this.offJoined = this.props.ws.on(msg.joined, () => {
+			this.state.busy = false;
+			navigate("/lobby");
+		});
+		this.offError = this.props.ws.on(msg.error, (m) => {
+			this.state.busy = false;
+			this.state.error = m.reason;
+		});
 	}
 
 	detach() {

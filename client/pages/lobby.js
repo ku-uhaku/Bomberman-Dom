@@ -2,22 +2,17 @@ import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { msg } from "/shared/global.js";
 
-function secondsLeft(endsAt) {
-	return Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
-}
-
 export class LobbyPage extends Component {
 	constructor(props) {
 		super(props, { lobby: null });
-		this.onLobby = (m) => {
-			this.state.lobby = m;
-		};
 		this.labelNode = null;
 		this.acc = 0;
 	}
 
 	attach() {
-		this.offLobby = this.props.ws.on(msg.lobby, this.onLobby);
+		this.offLobby = this.props.ws.on(msg.lobby, (m) => {
+			this.state.lobby = m;
+		});
 	}
 
 	detach() {
@@ -27,8 +22,10 @@ export class LobbyPage extends Component {
 	label() {
 		const lobby = this.state.lobby;
 		if (!lobby) return "";
-		if (lobby.countdownEndsAt) return `game starts in ${secondsLeft(lobby.countdownEndsAt)}`;
-		if (lobby.queueEndsAt) return `game starts in ${secondsLeft(lobby.queueEndsAt)}`;
+		if (lobby.countdownEndsAt)
+			return `game starts in ${Math.max(0, Math.ceil((lobby.countdownEndsAt - Date.now()) / 1000))}`;
+		if (lobby.queueEndsAt)
+			return `game starts in ${Math.max(0, Math.ceil((lobby.queueEndsAt - Date.now()) / 1000))}`;
 		return "waiting for players…";
 	}
 

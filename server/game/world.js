@@ -33,10 +33,6 @@ export class World {
 		});
 	}
 
-	isSolid(idx) {
-		return this.walls.has(idx) || this.blocks.has(idx) || this.bombs.has(idx);
-	}
-
 	boxTiles(x, y) {
 		const c0 = Math.max(0, Math.floor((x - half) / tile));
 		const c1 = Math.min(cols - 1, Math.floor((x + half - 1e-6) / tile));
@@ -57,8 +53,11 @@ export class World {
 			y + half > rows * tile
 		)
 			return true;
+		// is solid
 		return this.boxTiles(x, y).some(
-			(idx) => this.isSolid(idx) && !current.includes(idx)
+			(idx) =>
+				(this.walls.has(idx) || this.blocks.has(idx) || this.bombs.has(idx)) &&
+				!current.includes(idx)
 		);
 	}
 

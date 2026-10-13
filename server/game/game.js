@@ -17,14 +17,6 @@ export class Game {
 		this.pendingBombs = new Set(); // playerIds this tick
 	}
 
-	setInput(playerId, intent) {
-		this.inputs.set(playerId, intent);
-	}
-
-	requestBomb(playerId) {
-		this.pendingBombs.add(playerId);
-	}
-
 	sync() {
 		if (this.phase !== "playing") this.evaluate();
 		this.lobby.broadcast();
@@ -35,24 +27,26 @@ export class Game {
 		if (n >= maxPlayers) {
 			if (this.phase === "idle" || this.phase === "queue") this.startCountdown();
 		} else if (n >= 2) {
-			if (this.phase === "idle") this.startQueue();
+			if (this.phase === "idle") {
+				// start queue
+				this.phase = "queue";
+				this.countdownEndsAt = null;
+				this.queueEndsAt = Date.now() + queueMs;
+				this.stop();
+				this.interval = setInterval(() => this.tick(), 250);
+			}
 		} else {
 			this.reset();
 		}
-	}
-
-	startQueue() {
-		this.phase = "queue";
-		this.countdownEndsAt = null;
-		this.queueEndsAt = Date.now() + queueMs;
-		this.run();
 	}
 
 	startCountdown() {
 		this.phase = "countdown";
 		this.queueEndsAt = null;
 		this.countdownEndsAt = Date.now() + countdownMs;
-		this.run();
+		// run
+		this.stop();
+		this.interval = setInterval(() => this.tick(), 250);
 	}
 
 	reset() {
@@ -64,11 +58,6 @@ export class Game {
 			this.roundTimer = null;
 		}
 		this.stop();
-	}
-
-	run() {
-		this.stop();
-		this.interval = setInterval(() => this.tick(), 250);
 	}
 
 	stop() {

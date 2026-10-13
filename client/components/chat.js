@@ -30,13 +30,6 @@ export class Chat extends Component {
 		this.unsubs = [];
 	}
 
-	send() {
-		const text = this.state.value.trim();
-		if (!text) return;
-		this.state.error = "";
-		if (this.props.ws.sendMessage({ type: msg.chat, text })) this.state.value = "";
-	}
-
 	tick(delta) {
 		this.acc += delta;
 		if (this.acc < 100) return;
@@ -59,7 +52,16 @@ export class Chat extends Component {
 					this.stick = n.scrollHeight - n.scrollTop - n.clientHeight < 24;
 				},
 			}, messages.map((m, i) => el("p", { key: i }, `${m.nickname}: ${m.text}`))),
-			el("form", { onsubmit: (e) => { e.preventDefault(); this.send(); } }, [
+			el("form", {
+				onsubmit: (e) => {
+					e.preventDefault();
+					// send
+					const text = this.state.value.trim();
+					if (!text) return;
+					this.state.error = "";
+					if (this.props.ws.sendMessage({ type: msg.chat, text })) this.state.value = "";
+				},
+			}, [
 				el("input", {
 					value,
 					oninput: (e) => {
