@@ -1,6 +1,6 @@
 import { el, Component } from "../framework/index.js";
 import { AnimatedImage } from "../components/animatedImage.js";
-import { cols, rows, tile, msg } from "/shared/global.js";
+import { cols, rows, tile, tickMs, msg } from "/shared/global.js";
 import { toCol, toRow } from "/shared/util.js";
 
 const atlas = "/assets/images/art.png";
@@ -15,6 +15,7 @@ export class GamePage extends Component {
 		this.root = null;
 		this.scale = 1;
 		this.tokens = new Map(); // playerId -> node
+		this.buffer = []; // { t, players } snapshots, oldest first
 	}
 
 	attach() {
@@ -24,6 +25,7 @@ export class GamePage extends Component {
 			this.state.start = m;
 		});
 		this.offState = this.props.ws.on(msg.state, (m) => {
+			this.buffer.push({ t: performance.now(), players: m.snapshot.players });
 			this.state.snap = m.snapshot;
 		});
 	}
@@ -39,6 +41,24 @@ export class GamePage extends Component {
 		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, window.innerHeight / rows)));
 		this.root.style.setProperty("--tile", `${size}px`);
 		this.scale = size / tile;
+	}
+
+	// render two ticks in the past so there is always a snapshot pair to lerp between
+	tick() {
+		const buf = this.buffer;
+		if (!buf.length) return;
+		const at = performance.now() - 2 * tickMs;
+		while (buf.length > 2 && buf[1].t <= at) buf.shift();
+		const a = buf[0];
+		const b = buf[1] ?? a;
+		const k = b.t > a.t ? Math.min(1, Math.max(0, (at - a.t) / (b.t - a.t))) : 1;
+		for (const [id, node] of this.tokens) {
+			const from = a.players[id];
+			const to = b.players[id];
+			if (!from || !to) continue;
+			this.place(node, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k);
+			node.classList.toggle("dead", !to.alive);
+		}
 	}
 
 	cellClass(idx, start, snap) {
