@@ -46,10 +46,12 @@ export class Chat extends Component {
 		return el("div", { class: "chat" }, [
 			el("div", {
 				class: "chat-messages",
-				ref: (n) => (this.listNode = n),
-				onscroll: (e) => {
-					const n = e.target;
-					this.stick = n.scrollHeight - n.scrollTop - n.clientHeight < 24;
+				ref: (n) => {
+					this.listNode = n;
+					// scroll doesn't bubble, so it can't go through the framework's event delegation
+					n.addEventListener("scroll", () => {
+						this.stick = n.scrollHeight - n.scrollTop - n.clientHeight < 24;
+					});
 				},
 			}, messages.map((m, i) => el("p", { key: i }, `${m.nickname}: ${m.text}`))),
 			el("form", {

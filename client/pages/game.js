@@ -137,7 +137,9 @@ export class GamePage extends Component {
 		const { start, snap, over } = this.state;
 		const me = snap?.players[this.props.playerId];
 		this.out = !!me && !me.alive;
-		if (!start) return el("div", { class: "game" });
+		const root = (children) =>
+			el("div", { class: "game", ref: (node) => { this.root = node; this.fit(); } }, children);
+		if (!start) return root([]);
 
 		const cells = [];
 		for (let idx = 0; idx < cols * rows; idx++)
@@ -154,7 +156,7 @@ export class GamePage extends Component {
 			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[i % characters.length] }))
 		);
 
-		return el("div", { class: "game", ref: (node) => { this.root = node; this.fit(); } }, [
+		return root([
 			el("div", { class: "hud" }, Object.entries(snap ? snap.players : start.players).map(([id, p]) =>
 				el("div", { key: id, class: Number(id) === this.props.playerId ? "hud-player me" : "hud-player" }, [
 					el("span", {}, p.nickname),
