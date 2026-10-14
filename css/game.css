@@ -94,3 +94,16 @@
 .cell.pu-speed::after { background: dodgerblue; }
 
 .badges { font-size: 12px; }
+
+.game .chat {
+    position: fixed;
+    right: 8px;
+    bottom: 8px;
+    width: 260px;
+}
+
+.game .chat-messages {
+    max-height: 160px;
+    overflow-y: auto;
+    font-size: 13px;
+}

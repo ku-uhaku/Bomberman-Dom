@@ -1,4 +1,5 @@
 import { el, Component } from "../framework/index.js";
+import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { cols, rows, tile, tickMs, baseSpeed, speedStep, msg } from "/shared/global.js";
 import { toCol, toRow } from "/shared/util.js";
@@ -150,6 +151,7 @@ export class GamePage extends Component {
 					el("span", { class: "hearts" }, p.lives === undefined ? "" : p.alive ? "♥".repeat(p.lives) : "out"),
 				])
 			)),
+			el(Chat, { ws: this.props.ws }),
 			el("div", { class: "board" }, [
 				...cells,
 				...tokens,
