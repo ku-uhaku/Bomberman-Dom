@@ -1,6 +1,6 @@
 import { el, Component } from "../framework/index.js";
 import { AnimatedImage } from "../components/animatedImage.js";
-import { cols, rows, tile, tickMs, msg } from "/shared/global.js";
+import { cols, rows, tile, tickMs, baseSpeed, speedStep, msg } from "/shared/global.js";
 import { toCol, toRow } from "/shared/util.js";
 
 const atlas = "/assets/images/art.png";
@@ -109,6 +109,8 @@ export class GamePage extends Component {
 		const blocks = snap ? snap.blocks : start.map.blocks;
 		if (snap && snap.explosions.includes(idx)) return "cell explosion";
 		if (snap && snap.bombs.some((b) => b.i === idx)) return "cell bomb";
+		const powerup = snap?.powerups.find(([i]) => i === idx);
+		if (powerup) return `cell pu-${powerup[1]}`;
 		if (blocks.includes(idx)) return "cell block";
 		if (start.map.walls.includes(idx)) {
 			const col = toCol(idx);
@@ -144,6 +146,7 @@ export class GamePage extends Component {
 			el("div", { class: "hud" }, Object.entries(snap ? snap.players : start.players).map(([id, p]) =>
 				el("div", { key: id, class: Number(id) === this.props.playerId ? "hud-player me" : "hud-player" }, [
 					el("span", {}, p.nickname),
+					el("span", { class: "badges" }, p.alive ? `B${p.maxBombs} F${p.range} S${(p.speed - baseSpeed) / speedStep}` : ""),
 					el("span", { class: "hearts" }, p.lives === undefined ? "" : p.alive ? "♥".repeat(p.lives) : "out"),
 				])
 			)),

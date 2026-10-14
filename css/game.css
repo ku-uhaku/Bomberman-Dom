@@ -76,3 +76,21 @@
     color: white;
     font-size: 32px;
 }
+
+.cell.pu-bombs::after,
+.cell.pu-flames::after,
+.cell.pu-speed::after {
+    content: "";
+    display: block;
+    width: 50%;
+    height: 50%;
+    margin: 25%;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.cell.pu-bombs::after { background: #333; }
+.cell.pu-flames::after { background: orangered; }
+.cell.pu-speed::after { background: dodgerblue; }
+
+.badges { font-size: 12px; }
