@@ -26,6 +26,9 @@ export class GamePage extends Component {
 		this.buffer = []; // { t, players } snapshots, oldest first
 		this.held = new Set(); // pressed movement key codes
 		this.sent = { x: 0, y: 0 }; // last intent sent
+		this.fpsNode = null;
+		this.frames = 0;
+		this.fpsAcc = 0;
 		this.out = false; // local player is dead: stop sending input
 	}
 
@@ -89,7 +92,15 @@ export class GamePage extends Component {
 	}
 
 	// render two ticks in the past so there is always a snapshot pair to lerp between
-	tick() {
+	tick(delta) {
+		this.frames++;
+		this.fpsAcc += delta;
+		if (this.fpsAcc >= 500) {
+			const text = `${Math.round((this.frames * 1000) / this.fpsAcc)} fps`;
+			if (this.fpsNode && this.fpsNode.textContent !== text) this.fpsNode.textContent = text;
+			this.frames = 0;
+			this.fpsAcc = 0;
+		}
 		const buf = this.buffer;
 		if (!buf.length) return;
 		const at = performance.now() - 2 * tickMs;
@@ -151,6 +162,7 @@ export class GamePage extends Component {
 					el("span", { class: "hearts" }, p.lives === undefined ? "" : p.alive ? "♥".repeat(p.lives) : "out"),
 				])
 			)),
+			el("div", { class: "fps", ref: (n) => (this.fpsNode = n) }),
 			el(Chat, { ws: this.props.ws }),
 			el("div", { class: "board" }, [
 				...cells,

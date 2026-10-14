@@ -107,3 +107,10 @@
     overflow-y: auto;
     font-size: 13px;
 }
+
+.fps {
+    position: fixed;
+    top: 4px;
+    left: 4px;
+    font-size: 12px;
+}
