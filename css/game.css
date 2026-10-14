@@ -44,3 +44,35 @@
 }
 
 .token.dead { display: none; }
+
+.game {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hud {
+    display: flex;
+    gap: 16px;
+    height: 40px;
+    align-items: center;
+}
+
+.hud-player {
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+}
+
+.hud-player.me { font-weight: bold; }
+.hearts { color: crimson; }
+
+.overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 32px;
+}

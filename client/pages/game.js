@@ -18,13 +18,14 @@ const keys = {
 
 export class GamePage extends Component {
 	constructor(props) {
-		super(props, { start: null, snap: null });
+		super(props, { start: null, snap: null, over: null });
 		this.root = null;
 		this.scale = 1;
 		this.tokens = new Map(); // playerId -> node
 		this.buffer = []; // { t, players } snapshots, oldest first
 		this.held = new Set(); // pressed movement key codes
 		this.sent = { x: 0, y: 0 }; // last intent sent
+		this.out = false; // local player is dead: stop sending input
 	}
 
 	attach() {
@@ -40,6 +41,9 @@ export class GamePage extends Component {
 			this.buffer.push({ t: performance.now(), players: m.snapshot.players });
 			this.state.snap = m.snapshot;
 		});
+		this.offOver = this.props.ws.on(msg.gameOver, (m) => {
+			this.state.over = m;
+		});
 	}
 
 	detach() {
@@ -48,10 +52,11 @@ export class GamePage extends Component {
 		window.removeEventListener("keyup", this.onKey);
 		this.offStart();
 		this.offState();
+		this.offOver();
 	}
 
 	key(e, down) {
-		if (/^(input|textarea)$/i.test(e.target.tagName)) return;
+		if (this.out || /^(input|textarea)$/i.test(e.target.tagName)) return;
 		if (e.code === "Space") {
 			e.preventDefault();
 			if (down && !e.repeat) this.props.ws.sendMessage({ type: msg.bomb });
@@ -77,7 +82,7 @@ export class GamePage extends Component {
 
 	fit() {
 		if (!this.root) return;
-		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, window.innerHeight / rows)));
+		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, (window.innerHeight - 90) / rows)));
 		this.root.style.setProperty("--tile", `${size}px`);
 		this.scale = size / tile;
 	}
@@ -115,7 +120,9 @@ export class GamePage extends Component {
 	}
 
 	render() {
-		const { start, snap } = this.state;
+		const { start, snap, over } = this.state;
+		const me = snap?.players[this.props.playerId];
+		this.out = !!me && !me.alive;
 		if (!start) return el("div", { class: "game" });
 
 		const cells = [];
@@ -134,8 +141,25 @@ export class GamePage extends Component {
 		);
 
 		return el("div", { class: "game", ref: (node) => { this.root = node; this.fit(); } }, [
-			el("div", { class: "board" }, [...cells, ...tokens]),
+			el("div", { class: "hud" }, Object.entries(snap ? snap.players : start.players).map(([id, p]) =>
+				el("div", { key: id, class: Number(id) === this.props.playerId ? "hud-player me" : "hud-player" }, [
+					el("span", {}, p.nickname),
+					el("span", { class: "hearts" }, p.lives === undefined ? "" : p.alive ? "♥".repeat(p.lives) : "out"),
+				])
+			)),
+			el("div", { class: "board" }, [
+				...cells,
+				...tokens,
+				this.out && !over ? el("div", { class: "overlay" }, "You are out") : null,
+				over ? el("div", { class: "overlay" }, this.winnerText(over, start)) : null,
+			]),
 		]);
+	}
+
+	winnerText(over, start) {
+		if (over.winnerId === null) return "Draw";
+		if (over.winnerId === this.props.playerId) return "You win!";
+		return `${start.players[over.winnerId]?.nickname ?? "Player"} wins`;
 	}
 
 	place(node, x, y) {

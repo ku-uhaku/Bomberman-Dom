@@ -40,6 +40,7 @@ class App extends Component {
 			// guard: /lobby and /game need a joined player
 			guard: (path) => path === "/" || path === "/nickname" || this.state.playerId !== null,
 			ws: this.ws,
+			playerId: this.state.playerId,
 		});
 	}
 }
