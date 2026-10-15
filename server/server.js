@@ -1,17 +1,40 @@
 import http from "node:http";
 import { serveStatic } from "./static.js";
 import { WebSocketServer } from "ws";
-import { msg } from "../shared/global.js";
+import { msg, maxPlayers } from "../shared/global.js";
 import { Lobby } from "./lobby.js";
 import { Chat } from "./chat.js";
 import { Game } from "./game/game.js";
 
 const PORT = process.env.PORT || 3000;
 
-const lobby = new Lobby(send);
-const chat = new Chat(lobby);
-const game = new Game(lobby);
-lobby.game = game;
+// each room is an independent lobby + chat + game
+const rooms = new Set();
+const socketRoom = new WeakMap(); // socket -> room
+
+function createRoom() {
+	const lobby = new Lobby(send);
+	const room = { lobby, chat: new Chat(lobby), game: new Game(lobby) };
+	lobby.game = room.game;
+	lobby.onEmpty = () => {
+		if (lobby.players.size === 0 && room.game.gameState === "idle") rooms.delete(room);
+	};
+	rooms.add(room);
+	return room;
+}
+
+// first room still gathering players, else a fresh one
+function findRoom(nickname) {
+	const name = nickname.trim().toLowerCase();
+	for (const room of rooms) {
+		const { lobby, game } = room;
+		if (!["idle", "queue", "countdown"].includes(game.gameState)) continue;
+		if (lobby.players.size >= maxPlayers) continue;
+		if ([...lobby.players.values()].some((p) => p.nickname.toLowerCase() === name)) continue;
+		return room;
+	}
+	return createRoom();
+}
 
 // socket helpers
 function send(socket, obj) {
@@ -57,24 +80,33 @@ function onMessage(socket, raw) {
 		case msg.join: {
 			if (typeof data.nickname !== "string")
 				return sendError(socket, "nickname must be a string");
-			const result = lobby.join(socket, data.nickname);
-			if (!result.ok) return sendError(socket, result.reason);
+			if (socketRoom.has(socket)) return sendError(socket, "already joined");
+			const room = findRoom(data.nickname);
+			const result = room.lobby.join(socket, data.nickname);
+			if (!result.ok) {
+				room.lobby.onEmpty();
+				return sendError(socket, result.reason);
+			}
+			socketRoom.set(socket, room);
 			send(socket, { type: msg.joined, playerId: result.playerId });
-			send(socket, { type: msg.chatHistory, messages: chat.history });
+			send(socket, { type: msg.chatHistory, messages: room.chat.history });
 			return;
 		}
 		case msg.chat: {
-			const player = lobby.findPlayer(socket);
+			const room = socketRoom.get(socket);
+			const player = room?.lobby.findPlayer(socket);
 			if (!player) return sendError(socket, "join first");
 			if (typeof data.text !== "string")
 				return sendError(socket, "text must be a string");
-			const result = chat.submit(player, data.text);
+			const result = room.chat.submit(player, data.text);
 			if (!result.ok) return sendError(socket, result.reason);
 			return;
 		}
 		case msg.input: {
-			const player = lobby.findPlayer(socket);
+			const room = socketRoom.get(socket);
+			const player = room?.lobby.findPlayer(socket);
 			if (!player) return sendError(socket, "join first");
+			const { game } = room;
 			if (typeof data.x !== "number" || typeof data.y !== "number")
 				return sendError(socket, "input x,y must be numbers");
 			if (game.gameState !== "playing") return;
@@ -82,10 +114,11 @@ function onMessage(socket, raw) {
 			return;
 		}
 		case msg.bomb: {
-			const player = lobby.findPlayer(socket);
+			const room = socketRoom.get(socket);
+			const player = room?.lobby.findPlayer(socket);
 			if (!player) return sendError(socket, "join first");
-			if (game.gameState !== "playing") return;
-			game.pendingBombs.add(player.id);
+			if (room.game.gameState !== "playing") return;
+			room.game.pendingBombs.add(player.id);
 			return;
 		}
 		default:

@@ -37,7 +37,10 @@ export class Lobby {
 
 	leave(id) {
 		setTimeout(() => {
-			if (this.players.delete(id)) this.game.sync();
+			if (this.players.delete(id)) {
+				this.game.sync();
+				this.onEmpty?.();
+			}
 		}, graceMs);
 	}
 
