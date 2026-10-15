@@ -6,6 +6,7 @@ export class Lobby {
 		this.players = new Map(); // id -> { id, nickname, socket }
 		this.nextId = 1;
 		this.game = null; // set by server: owns the timer machine
+		this.onEmpty = null;
 	}
 
 	findPlayer(socket) {
@@ -37,10 +38,10 @@ export class Lobby {
 
 	leave(id) {
 		setTimeout(() => {
-			if (this.players.delete(id)) {
-				this.game.sync();
-				this.onEmpty?.();
-			}
+			if (!this.players.delete(id)) return;
+			this.game.inputs.delete(id);
+			this.game.sync();
+			if (this.onEmpty) this.onEmpty();
 		}, graceMs);
 	}
 

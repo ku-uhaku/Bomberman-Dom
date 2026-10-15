@@ -1,30 +1,28 @@
 .game {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	gap: 8px;
 }
 
 .board {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(15, var(--tile));
-    width: calc(var(--tile) * 15);
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(15, var(--tile));
+	width: calc(var(--tile) * 15);
 }
 
 .cell {
-    width: var(--tile);
-    height: var(--tile);
-    background-image: url("/assets/images/art.png"), url("/assets/images/art.png");
-    background-size: calc(var(--tile) * 6.25);
-    image-rendering: pixelated;
-    --x: 1;
-    --y: 0;
-    --fx: 1;
-    --fy: 0;
-    background-position:
-        calc(var(--tile) * var(--x) * -1) calc(var(--tile) * var(--y) * -1),
-        calc(var(--tile) * var(--fx) * -1) calc(var(--tile) * var(--fy) * -1);
+	width: var(--tile);
+	height: var(--tile);
+	background-image: url("/assets/images/art.png");
+	background-size: calc(var(--tile) * 6.25);
+	image-rendering: pixelated;
+	--x: 1;
+	--y: 0;
+	background-position: calc(var(--tile) * var(--x) * -1) calc(var(--tile) * var(--y) * -1);
 }
 
 .cell.wall { --x: 0; --y: 0; }
@@ -34,47 +32,42 @@
 .cell.explosion { --x: 2; --y: 1; }
 
 .token {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 32px;
-    height: 32px;
-    transform-origin: top left;
-    will-change: transform;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 32px;
+	height: 32px;
+	transform-origin: top left;
+	will-change: transform;
 }
 
 .token.dead { display: none; }
 
-.game {
-    flex-direction: column;
-    gap: 8px;
-}
-
 .hud {
-    display: flex;
-    gap: 16px;
-    height: 40px;
-    align-items: center;
+	display: flex;
+	gap: 16px;
+	height: 40px;
+	align-items: center;
 }
 
 .hud-player {
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
+	display: flex;
+	flex-direction: column;
+	font-size: 14px;
 }
 
 .hud-player.me { font-weight: bold; }
 .hearts { color: crimson; }
 
 .overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    font-size: 32px;
+	position: absolute;
+	inset: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.6);
+	color: white;
+	font-size: 32px;
 }
 
 .cell.pu-bombs::after,

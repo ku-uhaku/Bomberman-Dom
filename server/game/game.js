@@ -154,6 +154,6 @@ export class Game {
 		this.lobby.sendAll({ type: msg.roundEnd });
 		this.evaluate();
 		this.lobby.sendLobby();
-		this.lobby.onEmpty?.();
+		if (this.lobby.onEmpty) this.lobby.onEmpty();
 	}
 }

@@ -8,6 +8,8 @@ const atlas = "/assets/images/art.png";
 const characters = [
 	[[0, 64], [32, 64]],
 	[[0, 96], [32, 96]],
+	[[64, 64], [96, 64]],
+	[[64, 96], [96, 96]],
 ];
 
 const keys = {
@@ -29,7 +31,7 @@ export class GamePage extends Component {
 		this.fpsNode = null;
 		this.frames = 0;
 		this.fpsAcc = 0;
-		this.out = false; // local player is dead: stop sending input
+		this.cache = null; // per-snapshot Sets for O(1) cellClass
 	}
 
 	attach() {
@@ -38,15 +40,25 @@ export class GamePage extends Component {
 		window.addEventListener("resize", this.onResize);
 		window.addEventListener("keydown", this.onKey);
 		window.addEventListener("keyup", this.onKey);
-		this.offStart = this.props.ws.on(msg.start, (m) => {
-			this.state.start = m;
-		});
-		this.offState = this.props.ws.on(msg.state, (m) => {
+		const ws = this.props.ws;
+		this.offStart = ws.on(msg.start, (m) => this.reset(m));
+		this.offState = ws.on(msg.state, (m) => {
 			this.buffer.push({ t: performance.now(), players: m.snapshot.players });
+			this.cache = {
+				blocks: new Set(m.snapshot.blocks),
+				bombs: new Set(m.snapshot.bombs.map((b) => b.i)),
+				explosions: new Set(m.snapshot.explosions),
+				powerups: new Map(m.snapshot.powerups),
+			};
 			this.state.snap = m.snapshot;
 		});
-		this.offOver = this.props.ws.on(msg.gameOver, (m) => {
+		this.offOver = ws.on(msg.gameOver, (m) => {
 			this.state.over = m;
+		});
+		this.offRoundEnd = ws.on(msg.roundEnd, () => {
+			this.state.start = null;
+			this.state.snap = null;
+			this.state.over = null;
 		});
 	}
 
@@ -57,10 +69,22 @@ export class GamePage extends Component {
 		this.offStart();
 		this.offState();
 		this.offOver();
+		this.offRoundEnd();
+	}
+
+	reset(start) {
+		this.buffer = [];
+		this.cache = null;
+		this.tokens.clear();
+		this.held.clear();
+		this.sent = { x: 0, y: 0 };
+		this.state.start = start;
+		this.state.snap = null;
+		this.state.over = null;
 	}
 
 	key(e, down) {
-		if (this.out || /^(input|textarea)$/i.test(e.target.tagName)) return;
+		if (/^(input|textarea)$/i.test(e.target.tagName)) return;
 		if (e.code === "Space") {
 			e.preventDefault();
 			if (down && !e.repeat) this.props.ws.sendMessage({ type: msg.bomb });
@@ -86,7 +110,7 @@ export class GamePage extends Component {
 
 	fit() {
 		if (!this.root) return;
-		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, (window.innerHeight - 90) / rows)));
+		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, (window.innerHeight - 160) / rows)));
 		this.root.style.setProperty("--tile", `${size}px`);
 		this.scale = size / tile;
 	}
@@ -113,21 +137,22 @@ export class GamePage extends Component {
 			const to = b.players[id];
 			if (!from || !to) continue;
 			this.place(node, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k);
+			if (node.classList.contains("dead") === !to.alive) return;
 			node.classList.toggle("dead", !to.alive);
 		}
 	}
 
-	cellClass(idx, start, snap) {
-		const blocks = snap ? snap.blocks : start.map.blocks;
-		if (snap && snap.explosions.includes(idx)) return "cell explosion";
-		if (snap && snap.bombs.some((b) => b.i === idx)) return "cell bomb";
-		const powerup = snap?.powerups.find(([i]) => i === idx);
-		if (powerup) return `cell pu-${powerup[1]}`;
-		if (blocks.includes(idx)) return "cell block";
+	cellClass(idx, start) {
+		const c = this.cache;
+		if (c) {
+			if (c.explosions.has(idx)) return "cell explosion";
+			if (c.bombs.has(idx)) return "cell bomb";
+			const pu = c.powerups.get(idx);
+			if (pu) return `cell pu-${pu}`;
+			if (c.blocks.has(idx)) return "cell block";
+		} else if (start.map.blocks.includes(idx)) return "cell block";
 		if (start.map.walls.includes(idx)) {
-			const col = toCol(idx);
-			const row = toRow(idx);
-			const border = col === 0 || row === 0 || col === cols - 1 || row === rows - 1;
+			const border = toCol(idx) === 0 || toRow(idx) === 0 || toCol(idx) === cols - 1 || toRow(idx) === rows - 1;
 			return border ? "cell wall" : "cell pillar";
 		}
 		return "cell";
@@ -135,32 +160,33 @@ export class GamePage extends Component {
 
 	render() {
 		const { start, snap, over } = this.state;
-		const me = snap?.players[this.props.playerId];
-		this.out = !!me && !me.alive;
 		const root = (children) =>
 			el("div", { class: "game", ref: (node) => { this.root = node; this.fit(); } }, children);
 		if (!start) return root([]);
 
 		const cells = [];
 		for (let idx = 0; idx < cols * rows; idx++)
-			cells.push(el("div", { key: idx, class: this.cellClass(idx, start, snap) }));
+			cells.push(el("div", { key: idx, class: this.cellClass(idx, start) }));
 
 		const tokens = Object.entries(start.players).map(([id, p], i) =>
 			el("div", {
 				key: id,
 				class: "token",
 				ref: (node) => {
+					if (!this.tokens.has(id)) this.place(node, p.x, p.y);
 					this.tokens.set(id, node);
-					this.place(node, p.x, p.y);
 				},
 			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[i % characters.length] }))
 		);
 
+		const players = snap ? snap.players : start.players;
+		const me = snap?.players[this.props.playerId];
+		const out = !!me && !me.alive;
 		return root([
-			el("div", { class: "hud" }, Object.entries(snap ? snap.players : start.players).map(([id, p]) =>
-				el("div", { key: id, class: Number(id) === this.props.playerId ? "hud-player me" : "hud-player" }, [
+			el("div", { class: "hud" }, Object.entries(players).map(([id, p]) =>
+				el("div", { key: id, class: String(id) === String(this.props.playerId) ? "hud-player me" : "hud-player" }, [
 					el("span", {}, p.nickname),
-					el("span", { class: "badges" }, p.alive ? `B${p.maxBombs} F${p.range} S${(p.speed - baseSpeed) / speedStep}` : ""),
+					el("span", { class: "badges" }, p.alive ? `B${p.maxBombs} F${p.range} S${Math.round((p.speed - baseSpeed) / speedStep)}` : ""),
 					el("span", { class: "hearts" }, p.lives === undefined ? "" : p.alive ? "♥".repeat(p.lives) : "out"),
 				])
 			)),
@@ -169,7 +195,7 @@ export class GamePage extends Component {
 			el("div", { class: "board" }, [
 				...cells,
 				...tokens,
-				this.out && !over ? el("div", { class: "overlay" }, "You are out") : null,
+				out && !over ? el("div", { class: "overlay" }, "You are out") : null,
 				over ? el("div", { class: "overlay" }, this.winnerText(over, start)) : null,
 			]),
 		]);
@@ -177,7 +203,7 @@ export class GamePage extends Component {
 
 	winnerText(over, start) {
 		if (over.winnerId === null) return "Draw";
-		if (over.winnerId === this.props.playerId) return "You win!";
+		if (String(over.winnerId) === String(this.props.playerId)) return "You win!";
 		return `${start.players[over.winnerId]?.nickname ?? "Player"} wins`;
 	}
 

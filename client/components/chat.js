@@ -7,17 +7,22 @@ export class Chat extends Component {
 		this.unsubs = [];
 		this.listNode = null;
 		this.stick = true; // follow new messages unless the user scrolled up
-		this.acc = 0;
-		this.lastCount = 0;
+		// scroll doesn't bubble, so it can't go through the framework's event delegation
+		this.onScroll = () => {
+			const n = this.listNode;
+			this.stick = n.scrollHeight - n.scrollTop - n.clientHeight < 24;
+		};
 	}
 
 	attach() {
 		this.unsubs.push(
 			this.props.ws.on(msg.chatHistory, (m) => {
 				this.state.messages = m.messages;
+				this.scroll();
 			}),
 			this.props.ws.on(msg.chatMsg, (m) => {
 				this.state.messages = [...this.state.messages, m.message];
+				this.scroll();
 			}),
 			this.props.ws.on(msg.error, (m) => {
 				this.state.error = m.reason;
@@ -28,17 +33,12 @@ export class Chat extends Component {
 	detach() {
 		this.unsubs.forEach((off) => off());
 		this.unsubs = [];
+		if (this.listNode) this.listNode.removeEventListener("scroll", this.onScroll);
+		this.listNode = null;
 	}
 
-	tick(delta) {
-		this.acc += delta;
-		if (this.acc < 100) return;
-		this.acc = 0;
-		if (!this.listNode) return;
-		const count = this.state.messages.length;
-		if (count === this.lastCount) return;
-		this.lastCount = count;
-		if (this.stick) this.listNode.scrollTop = this.listNode.scrollHeight;
+	scroll() {
+		if (this.stick && this.listNode) this.listNode.scrollTop = this.listNode.scrollHeight;
 	}
 
 	render() {
@@ -47,11 +47,10 @@ export class Chat extends Component {
 			el("div", {
 				class: "chat-messages",
 				ref: (n) => {
+					if (this.listNode && this.listNode !== n) this.listNode.removeEventListener("scroll", this.onScroll);
 					this.listNode = n;
-					// scroll doesn't bubble, so it can't go through the framework's event delegation
-					n.addEventListener("scroll", () => {
-						this.stick = n.scrollHeight - n.scrollTop - n.clientHeight < 24;
-					});
+					n.addEventListener("scroll", this.onScroll);
+					this.scroll();
 				},
 			}, messages.map((m, i) => el("p", { key: i }, `${m.nickname}: ${m.text}`))),
 			el("form", {

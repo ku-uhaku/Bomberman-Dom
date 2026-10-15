@@ -38,7 +38,8 @@ export class AppWebSocket {
 					return;
 				}
 				if (!data || typeof data.type !== "string") return;
-				if (REPLAY.has(data.type)) this.last.set(data.type, data);
+				if (data.type === msg.roundEnd) this.last.delete(msg.start);
+				else if (REPLAY.has(data.type)) this.last.set(data.type, data);
 				const set = this.handlers.get(data.type);
 				if (set) for (const fn of set) fn(data);
 			};
