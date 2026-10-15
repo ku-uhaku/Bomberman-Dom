@@ -1,6 +1,172 @@
+/* design system: 4 colours, sharp corners, monospace, no shadows/gradients */
+
+:root {
+	--bg: #212123;
+	--muted: #6a536e;
+	--accent: #4b80ca;
+	--ink: #f2f0e5;
+	--font: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+}
+
+* {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+	height: 100%;
+}
+
+body {
+	background: var(--bg);
+	color: var(--ink);
+	font-family: var(--font);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+img {
+	/* for pixel art */
+	image-rendering: -moz-crisp-edges;
+	image-rendering: crisp-edges;
+	image-rendering: pixelated;
+}
+
+/* ---------- pages (nickname, lobby) ---------- */
+
+main {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 16px;
+	height: 100%;
+	padding: 16px;
+}
+
+.title {
+	width: 300px;
+	height: auto;
+}
+
+h2 {
+	font-size: 16px;
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	color: var(--muted);
+}
+
+/* ---------- form controls ---------- */
+
+input {
+	padding: 8px;
+	background: var(--bg);
+	border: 2px solid var(--muted);
+	border-radius: 0;
+	color: var(--ink);
+	font: inherit;
+}
+
+input:focus {
+	border-color: var(--accent);
+	outline: none;
+}
+
+button {
+	padding: 8px 16px;
+	background: var(--accent);
+	border: 2px solid var(--accent);
+	border-radius: 0;
+	color: var(--ink);
+	font: inherit;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	cursor: pointer;
+}
+
+button:hover {
+	background: var(--muted);
+	border-color: var(--muted);
+}
+
+button:disabled {
+	background: var(--muted);
+	border-color: var(--muted);
+	cursor: default;
+}
+
+.error {
+	color: var(--ink);
+	background: var(--accent);
+	padding: 4px 8px;
+}
+
+/* ---------- lobby roster ---------- */
+
+main ul {
+	list-style: none;
+	border: 2px solid var(--muted);
+	min-width: 200px;
+}
+
+main li {
+	padding: 4px 12px;
+	border-bottom: 2px solid var(--muted);
+}
+
+main li:last-child {
+	border-bottom: none;
+}
+
+/* ---------- sprites ---------- */
+
 .animated-image {
-    display: inline-block;
-    background-repeat: no-repeat;
-    image-rendering: pixelated;
+	display: inline-block;
+	background-repeat: no-repeat;
+	image-rendering: pixelated;
+}
+
+/* ---------- chat (lobby + game) ---------- */
+
+.chat {
+	position: fixed;
+	right: 8px;
+	bottom: 8px;
+	width: 260px;
+	z-index: 1;
+	background: rgba(33, 33, 35, 0.92);
+	border: 2px solid var(--muted);
+}
+
+.chat-messages {
+	max-height: 160px;
+	overflow-y: auto;
+	padding: 4px;
+	font-size: 13px;
+	word-break: break-word;
+}
+
+.chat p {
+	padding: 1px 4px;
+}
+
+.chat form {
+	display: flex;
+	gap: 4px;
+	padding: 4px;
+}
+
+.chat input {
+	flex: 1;
+	min-width: 0;
+	padding: 4px;
+}
+
+.chat button {
+	padding: 4px 8px;
+	font-size: 12px;
 }
 

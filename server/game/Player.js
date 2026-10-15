@@ -37,12 +37,11 @@ export class Player {
 		const vx = (intent.x / length) * this.speed * secs;
 		const vy = (intent.y / length) * this.speed * secs;
 
-		const current = world.boxTiles(this.x, this.y);
 		const nx = this.x + vx;
-		if (!world.collides(nx, this.y, current)) this.x = nx;
+		if (!world.collides(nx, this.y)) this.x = nx;
 
 		const ny = this.y + vy;
-		if (!world.collides(this.x, ny, current)) this.y = ny;
+		if (!world.collides(this.x, ny)) this.y = ny;
 	}
 
 	applyPowerup(type) {

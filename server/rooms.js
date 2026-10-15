@@ -12,7 +12,7 @@ export function createRoom(send, rooms) {
 	const room = { lobby, chat: new Chat(lobby), game: new Game(lobby) };
 	lobby.game = room.game;
 	lobby.onEmpty = () => {
-		if (lobby.players.size === 0 && room.game.gameState === "idle") rooms.delete(room);
+		if (lobby.active().length === 0 && room.game.gameState === "idle") rooms.delete(room);
 	};
 	rooms.add(room);
 	return room;
@@ -21,10 +21,13 @@ export function createRoom(send, rooms) {
 export function findRoom(send, rooms, nickname) {
 	const name = nickname.trim().toLowerCase();
 	for (const room of rooms) {
+		if (room.lobby.active().some((p) => p.nickname.toLowerCase() === name))
+			return { taken: true };
+	}
+	for (const room of rooms) {
 		const { lobby, game } = room;
 		if (game.gameState !== "idle" && game.gameState !== "queue" && game.gameState !== "countdown") continue;
-		if (lobby.players.size >= maxPlayers) continue;
-		if ([...lobby.players.values()].some((p) => p.nickname.toLowerCase() === name)) continue;
+		if (lobby.active().length >= maxPlayers) continue;
 		return room;
 	}
 	return createRoom(send, rooms);

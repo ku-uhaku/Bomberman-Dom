@@ -5,12 +5,10 @@ import { cols, rows, tile, tickMs, baseSpeed, speedStep, msg } from "/shared/glo
 import { toCol, toRow } from "/shared/util.js";
 
 const atlas = "/assets/images/art.png";
-const characters = [
-	[[0, 64], [32, 64]],
-	[[0, 96], [32, 96]],
-	[[64, 64], [96, 64]],
-	[[64, 96], [96, 96]],
-];
+const characters = [0, 1, 2, 3].map((idx) => [
+	[0, 64 + 32 * idx],
+	[32, 64 + 32 * idx],
+]);
 
 const keys = {
 	KeyW: [0, -1], ArrowUp: [0, -1],
@@ -24,14 +22,14 @@ export class GamePage extends Component {
 		super(props, { start: null, snap: null, over: null });
 		this.root = null;
 		this.scale = 1;
-		this.tokens = new Map(); // playerId -> node
+		this.players = new Map(); // playerId -> node
 		this.buffer = []; // { t, players } snapshots, oldest first
 		this.held = new Set(); // pressed movement key codes
 		this.sent = { x: 0, y: 0 }; // last intent sent
 		this.fpsNode = null;
 		this.frames = 0;
 		this.fpsAcc = 0;
-		this.cache = null; // per-snapshot Sets for O(1) cellClass
+		this.cache = null; // per-snapshot Sets for O(1) objClass
 	}
 
 	attach() {
@@ -75,9 +73,10 @@ export class GamePage extends Component {
 	reset(start) {
 		this.buffer = [];
 		this.cache = null;
-		this.tokens.clear();
+		this.players.clear();
 		this.held.clear();
 		this.sent = { x: 0, y: 0 };
+		this.fit();
 		this.state.start = start;
 		this.state.snap = null;
 		this.state.over = null;
@@ -109,10 +108,13 @@ export class GamePage extends Component {
 	}
 
 	fit() {
-		if (!this.root) return;
 		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, (window.innerHeight - 160) / rows)));
-		this.root.style.setProperty("--tile", `${size}px`);
+		if (this.root) this.root.style.setProperty("--tile", `${size}px`);
 		this.scale = size / tile;
+		for (const [id, node] of this.players) {
+			const p = this.state.snap?.players[id] ?? this.state.start?.players[id];
+			if (p) this.place(node, p.x, p.y);
+		}
 	}
 
 	// render two ticks in the past so there is always a snapshot pair to lerp between
@@ -132,30 +134,32 @@ export class GamePage extends Component {
 		const a = buf[0];
 		const b = buf[1] ?? a;
 		const k = b.t > a.t ? Math.min(1, Math.max(0, (at - a.t) / (b.t - a.t))) : 1;
-		for (const [id, node] of this.tokens) {
+		for (const [id, node] of this.players) {
 			const from = a.players[id];
 			const to = b.players[id];
 			if (!from || !to) continue;
 			this.place(node, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k);
-			if (node.classList.contains("dead") === !to.alive) return;
+			if (node.classList.contains("dead") === !to.alive) continue;
 			node.classList.toggle("dead", !to.alive);
 		}
 	}
 
-	cellClass(idx, start) {
+	// static map geometry, written once per match
+	geoClass(idx, start) {
+		if (!start.map.walls.includes(idx)) return "cell";
+		const border = toCol(idx) === 0 || toRow(idx) === 0 || toCol(idx) === cols - 1 || toRow(idx) === rows - 1;
+		return border ? "cell wall" : "cell pillar";
+	}
+
+	// cell objects, re-evaluated per snapshot
+	objClass(idx, start) {
 		const c = this.cache;
-		if (c) {
-			if (c.explosions.has(idx)) return "cell explosion";
-			if (c.bombs.has(idx)) return "cell bomb";
-			const pu = c.powerups.get(idx);
-			if (pu) return `cell pu-${pu}`;
-			if (c.blocks.has(idx)) return "cell block";
-		} else if (start.map.blocks.includes(idx)) return "cell block";
-		if (start.map.walls.includes(idx)) {
-			const border = toCol(idx) === 0 || toRow(idx) === 0 || toCol(idx) === cols - 1 || toRow(idx) === rows - 1;
-			return border ? "cell wall" : "cell pillar";
-		}
-		return "cell";
+		if (!c) return start.map.blocks.includes(idx) ? "block" : "";
+		if (c.explosions.has(idx)) return "explosion";
+		if (c.bombs.has(idx)) return "bomb";
+		const pu = c.powerups.get(idx);
+		if (pu) return `pu-${pu}`;
+		return c.blocks.has(idx) ? "block" : "";
 	}
 
 	render() {
@@ -164,26 +168,31 @@ export class GamePage extends Component {
 			el("div", { class: "game", ref: (node) => { this.root = node; this.fit(); } }, children);
 		if (!start) return root([]);
 
+		// convert cells into html
 		const cells = [];
-		for (let idx = 0; idx < cols * rows; idx++)
-			cells.push(el("div", { key: idx, class: this.cellClass(idx, start) }));
+		for (let idx = 0; idx < cols * rows; idx++) {
+			const cell = { key: idx, class: this.geoClass(idx, start) };
+			const obj = this.objClass(idx, start);
+			if (obj) cell["data-obj"] = obj;
+			cells.push(el("div", cell));
+		}
 
-		const tokens = Object.entries(start.players).map(([id, p], i) =>
+		const players = Object.entries(start.players).map(([id, p]) =>
 			el("div", {
 				key: id,
-				class: "token",
+				class: "player",
 				ref: (node) => {
-					if (!this.tokens.has(id)) this.place(node, p.x, p.y);
-					this.tokens.set(id, node);
+					if (!this.players.has(id)) this.place(node, p.x, p.y);
+					this.players.set(id, node);
 				},
-			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[i % characters.length] }))
+			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[(Number(id) - 1) % characters.length] }))
 		);
 
-		const players = snap ? snap.players : start.players;
+		const roster = snap ? snap.players : start.players;
 		const me = snap?.players[this.props.playerId];
-		const out = !!me && !me.alive;
+		const out = me?.alive === false;
 		return root([
-			el("div", { class: "hud" }, Object.entries(players).map(([id, p]) =>
+			el("div", { class: "hud" }, Object.entries(roster).map(([id, p]) =>
 				el("div", { key: id, class: String(id) === String(this.props.playerId) ? "hud-player me" : "hud-player" }, [
 					el("span", {}, p.nickname),
 					el("span", { class: "badges" }, p.alive ? `B${p.maxBombs} F${p.range} S${Math.round((p.speed - baseSpeed) / speedStep)}` : ""),
@@ -194,7 +203,7 @@ export class GamePage extends Component {
 			el(Chat, { ws: this.props.ws }),
 			el("div", { class: "board" }, [
 				...cells,
-				...tokens,
+				...players,
 				out && !over ? el("div", { class: "overlay" }, "You are out") : null,
 				over ? el("div", { class: "overlay" }, this.winnerText(over, start)) : null,
 			]),

@@ -27,10 +27,10 @@ export class Game {
 	}
 
 	evaluate() {
-		const n = this.lobby.players.size;
-		if (n >= maxPlayers) {
-			if (this.gameState === "idle" || this.gameState === "queue") this.startCountdown();
-		} else if (n >= 2) {
+		const n = this.lobby.active().length;
+		if (this.gameState === "countdown" || this.gameState === "playing" || this.gameState === "over") return;
+		if (n >= maxPlayers) this.startCountdown();
+		else if (n >= 2) {
 			if (this.gameState === "idle") {
 				// start queue
 				this.gameState = "queue";
@@ -45,6 +45,7 @@ export class Game {
 	}
 
 	startCountdown() {
+		if (this.gameState === "countdown") return;
 		this.gameState = "countdown";
 		this.queueEndsAt = null;
 		this.countdownEndsAt = Date.now() + countdownMs;
@@ -74,7 +75,7 @@ export class Game {
 	tick() {
 		const now = Date.now();
 		if (this.gameState === "queue" && now >= this.queueEndsAt) {
-			if (this.lobby.players.size >= 2) this.startCountdown();
+			if (this.lobby.active().length >= 2) this.startCountdown();
 			else this.reset();
 			this.lobby.sendLobby();
 		} else if (this.gameState === "countdown" && now >= this.countdownEndsAt) {
@@ -125,7 +126,7 @@ export class Game {
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
 
-		const players = [...this.lobby.players.values()].map((p) => ({
+		const players = this.lobby.active().map((p) => ({
 			id: p.id,
 			nickname: p.nickname,
 		}));

@@ -48,6 +48,7 @@ export class NicknamePage extends Component {
 	render() {
 		const { nickname, error, busy } = this.state;
 		return el("main", {}, [
+			el("img", { class: "title", src: "/assets/images/title.png", alt: "Bomberman" }),
 			el("h2", {}, "Nickname"),
 			el("form", { onsubmit: (e) => this.submit(e) }, [
 				el("input", {
@@ -57,6 +58,7 @@ export class NicknamePage extends Component {
 						this.state.nickname = e.target.value;
 					},
 					placeholder: "nickname",
+					maxlength: 12,
 					ref: (node) => node.focus(),
 				}),
 				el("button", { type: "submit", disabled: busy }, busy ? "Joining…" : "Join"),

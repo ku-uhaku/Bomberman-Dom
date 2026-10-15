@@ -1,6 +1,6 @@
 import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
-import { msg } from "/shared/global.js";
+import { msg, maxPlayers } from "/shared/global.js";
 
 export class LobbyPage extends Component {
 	constructor(props) {
@@ -22,10 +22,9 @@ export class LobbyPage extends Component {
 	label() {
 		const lobby = this.state.lobby;
 		if (!lobby) return "";
-		if (lobby.countdownEndsAt)
-			return `game starts in ${Math.max(0, Math.ceil((lobby.countdownEndsAt - Date.now()) / 1000))}`;
-		if (lobby.queueEndsAt)
-			return `game starts in ${Math.max(0, Math.ceil((lobby.queueEndsAt - Date.now()) / 1000))}`;
+		const left = (at) => Math.max(0, Math.ceil((at - Date.now()) / 1000));
+		if (lobby.countdownEndsAt) return `game starts in ${left(lobby.countdownEndsAt)}`;
+		if (lobby.queueEndsAt) return `waiting for players — ${left(lobby.queueEndsAt)}s left`;
 		return "waiting for players…";
 	}
 
@@ -43,7 +42,7 @@ export class LobbyPage extends Component {
 		const lobby = this.state.lobby;
 		const players = lobby ? lobby.players : [];
 		return el("main", {}, [
-			el("h2", {}, `${players.length} / 4`),
+			el("h2", {}, `${players.length} / ${maxPlayers}`),
 			el("ul", {}, players.map((p) => el("li", { key: p.id }, p.nickname))),
 			el("p", { ref: (n) => (this.labelNode = n) }, this.label()),
 			el(Chat, { ws: this.props.ws }),

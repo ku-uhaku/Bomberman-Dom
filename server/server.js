@@ -56,6 +56,7 @@ function onMessage(socket, raw) {
 				return sendError(socket, "nickname must be a string");
 			if (socketRoom.has(socket)) return sendError(socket, "already joined");
 			const room = findRoom(send, rooms, data.nickname);
+			if (room.taken) return sendError(socket, "nickname already taken");
 			const result = room.lobby.join(socket, data.nickname);
 			if (!result.ok) {
 				room.lobby.onEmpty();

@@ -24,7 +24,7 @@ const spawns = [ // 4 corners
   [13, 11],
 ];
 
-const blockDensity = 0.6;
+const blockDensity = 0.5;
 
 // spawn cell plus 2 cells inward along both edges to not trap player
 function safeZone([col, row]) {

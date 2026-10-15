@@ -15,6 +15,7 @@
 }
 
 .cell {
+	position: relative;
 	width: var(--tile);
 	height: var(--tile);
 	background-image: url("/assets/images/art.png");
@@ -27,11 +28,29 @@
 
 .cell.wall { --x: 0; --y: 0; }
 .cell.pillar { --x: 3; --y: 0; }
-.cell.block { --x: 2; --y: 0; }
-.cell.bomb { --x: 0; --y: 1; }
-.cell.explosion { --x: 2; --y: 1; }
 
-.token {
+/* cell objects: obstacles, bombs, explosions, powerups */
+.cell[data-obj]::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: url("/assets/images/art.png");
+	background-size: calc(var(--tile) * 6.25);
+	image-rendering: pixelated;
+	--x: 2;
+	--y: 0;
+	background-position: calc(var(--tile) * var(--x) * -1) calc(var(--tile) * var(--y) * -1);
+}
+
+.cell[data-obj="block"]::after { --x: 2; --y: 0; }
+.cell[data-obj="bomb"]::after { --x: 0; --y: 1; }
+.cell[data-obj="explosion"]::after { --x: 2; --y: 1; }
+
+.cell[data-obj="pu-bombs"]::after { --x: 5; --y: 1; }
+.cell[data-obj="pu-flames"]::after { --x: 5; --y: 2; }
+.cell[data-obj="pu-speed"]::after { --x: 5; --y: 3; }
+
+.player {
 	position: absolute;
 	left: 0;
 	top: 0;
@@ -41,7 +60,7 @@
 	will-change: transform;
 }
 
-.token.dead { display: none; }
+.player.dead { display: none; }
 
 .hud {
 	display: flex;
@@ -54,10 +73,12 @@
 	display: flex;
 	flex-direction: column;
 	font-size: 14px;
+	color: var(--muted);
 }
 
-.hud-player.me { font-weight: bold; }
-.hearts { color: crimson; }
+.hud-player.me { color: var(--ink); }
+.badges { font-size: 12px; }
+.hearts { color: var(--accent); }
 
 .overlay {
 	position: absolute;
@@ -65,45 +86,17 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background: rgba(0, 0, 0, 0.6);
-	color: white;
+	background: rgba(33, 33, 35, 0.85);
+	color: var(--ink);
 	font-size: 32px;
-}
-
-.cell.pu-bombs::after,
-.cell.pu-flames::after,
-.cell.pu-speed::after {
-    content: "";
-    display: block;
-    width: 50%;
-    height: 50%;
-    margin: 25%;
-    border-radius: 50%;
-    border: 2px solid white;
-}
-
-.cell.pu-bombs::after { background: #333; }
-.cell.pu-flames::after { background: orangered; }
-.cell.pu-speed::after { background: dodgerblue; }
-
-.badges { font-size: 12px; }
-
-.game .chat {
-    position: fixed;
-    right: 8px;
-    bottom: 8px;
-    width: 260px;
-}
-
-.game .chat-messages {
-    max-height: 160px;
-    overflow-y: auto;
-    font-size: 13px;
+	text-transform: uppercase;
+	letter-spacing: 4px;
 }
 
 .fps {
-    position: fixed;
-    top: 4px;
-    left: 4px;
-    font-size: 12px;
+	position: fixed;
+	top: 4px;
+	left: 4px;
+	font-size: 12px;
+	color: var(--muted);
 }

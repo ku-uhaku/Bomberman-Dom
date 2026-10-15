@@ -45,8 +45,7 @@ export class World {
 		return tiles;
 	}
 
-	// tiles the player already overlaps (their own bomb) don't block them
-	collides(x, y, current = []) {
+	collides(x, y) {
 		if (
 			x - half < 0 ||
 			x + half > cols * tile ||
@@ -54,12 +53,8 @@ export class World {
 			y + half > rows * tile
 		)
 			return true;
-		
-		// is solid
 		return this.boxTiles(x, y).some(
-			(idx) =>
-				(this.walls.has(idx) || this.blocks.has(idx) || this.bombs.has(idx)) &&
-				!current.includes(idx)
+			(idx) => this.walls.has(idx) || this.blocks.has(idx)
 		);
 	}
 
