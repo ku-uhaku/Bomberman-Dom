@@ -1,5 +1,14 @@
 import { el, Component, navigate } from "../framework/index.js";
-import { msg } from "/shared/global.js";
+import { AnimatedImage } from "../components/animatedImage.js";
+import { msg, tile } from "/shared/global.js";
+
+const atlas = "/assets/images/art.png";
+
+// frame 1 of each player sprite, matching characters[0] / characters[1] in game.js
+const credits = [
+	{ name: "Mbarrah", frames: [[0, 96], [32, 96]] },
+	{ name: "Mbelhouss", frames: [[0, 64], [32, 64]] },
+];
 
 export class NicknamePage extends Component {
 	constructor(props) {
@@ -47,8 +56,7 @@ export class NicknamePage extends Component {
 
 	render() {
 		const { nickname, error, busy } = this.state;
-		return el("main", {}, [
-			el("img", { class: "title", src: "/assets/images/title.png", alt: "Bomberman" }),
+		const panel = [
 			el("h2", {}, "Nickname"),
 			el("form", { onsubmit: (e) => this.submit(e) }, [
 				el("input", {
@@ -64,6 +72,24 @@ export class NicknamePage extends Component {
 				el("button", { type: "submit", disabled: busy }, busy ? "Joining…" : "Join"),
 			]),
 			error ? el("p", { class: "error" }, error) : null,
+		];
+
+		const credit = (c, key, flip) =>
+			el("div", { class: "credit", key }, [
+				el("div", { class: flip ? "credit-sprite flip" : "credit-sprite" },
+					el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: c.frames })
+				),
+				el("span", {}, c.name),
+			]);
+
+		return el("main", {}, [
+			el("img", { class: "title", src: "/assets/images/title.png", alt: "Bomberman" }),
+			el("p", { class: "credits-label" }, "A game by"),
+			el("div", { class: "credits" }, [
+				credit(credits[0], "left"),
+				el("div", { class: "nickname-panel" }, panel),
+				credit(credits[1], "right", true),
+			]),
 		]);
 	}
 }

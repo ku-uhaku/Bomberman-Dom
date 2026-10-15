@@ -27,6 +27,7 @@ export const graceMs = 4000;
 
 export const chatMax = 300;
 export const chatHistory = 50;
+export const chatFade = 5;
 
 export const msg = {
   join: "join",

@@ -1,0 +1,56 @@
+.title {
+	width: 700px;
+	height: auto;
+}
+
+.credits-label {
+	color: var(--muted);
+	text-transform: uppercase;
+	letter-spacing: 2px;
+	font-size: 12px;
+}
+
+.credits {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 32px;
+	width: 100%;
+}
+
+.credit {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: none;
+	font-size: 16px;
+	letter-spacing: 1px;
+}
+
+/* reserves the scaled box: transform doesn't affect layout (tile 32 × scale 5) */
+.credit-sprite {
+	width: 160px;
+	height: 160px;
+	background: var(--muted);
+}
+
+.credit-sprite .animated-image {
+	transform: scale(5);
+	transform-origin: top left;
+}
+
+.credit-sprite.flip {
+	transform: scaleX(-1);
+}
+
+.nickname-panel {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+}
+
+.nickname-panel form {
+	display: flex;
+	gap: 8px;
+}

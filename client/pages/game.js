@@ -10,7 +10,7 @@ const characters = [0, 1, 2, 3].map((idx) => [
 	[32, 64 + 32 * idx],
 ]);
 
-const keys = {
+const keys = { // suport arrows and WASD
 	KeyW: [0, -1], ArrowUp: [0, -1],
 	KeyS: [0, 1], ArrowDown: [0, 1],
 	KeyA: [-1, 0], ArrowLeft: [-1, 0],

@@ -33,7 +33,7 @@ const server = http.createServer(async (req, res) => {
 	}
 
 	const urlPath = new URL(req.url, "http://localhost").pathname;
-	const file = urlPath === "/" ? "/index.html" : urlPath;
+	const file = urlPath === "/" ? "/client/index.html" : urlPath;
 
 	if (await serveStatic(res, file)) return;
 

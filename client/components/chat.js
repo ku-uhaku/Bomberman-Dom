@@ -1,5 +1,5 @@
 import { el, Component } from "../framework/index.js";
-import { msg } from "/shared/global.js";
+import { msg, chatFade, chatMax } from "/shared/global.js";
 
 export class Chat extends Component {
 	constructor(props) {
@@ -41,6 +41,12 @@ export class Chat extends Component {
 		if (this.stick && this.listNode) this.listNode.scrollTop = this.listNode.scrollHeight;
 	}
 
+	opacity(i) {
+		return i < chatFade && this.state.messages.length > chatFade
+			? (i + 1) / chatFade
+			: 1;
+	}
+
 	render() {
 		const { messages, value, error } = this.state;
 		return el("div", { class: "chat" }, [
@@ -52,7 +58,9 @@ export class Chat extends Component {
 					n.addEventListener("scroll", this.onScroll);
 					this.scroll();
 				},
-			}, messages.map((m, i) => el("p", { key: i }, `${m.nickname}: ${m.text}`))),
+			}, messages.map((m, i) =>
+				el("p", { key: i, style: `opacity:${this.opacity(i)}` }, `${m.nickname}: ${m.text}`)
+			)),
 			el("form", {
 				onsubmit: (e) => {
 					e.preventDefault();
@@ -70,6 +78,7 @@ export class Chat extends Component {
 						this.state.value = e.target.value;
 					},
 					placeholder: "say something…",
+					maxlength: chatMax,
 				}),
 				el("button", { type: "submit" }, "Send"),
 			]),
