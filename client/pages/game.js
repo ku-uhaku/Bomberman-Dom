@@ -2,12 +2,11 @@ import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { cols, rows, tile, tickMs, baseSpeed, speedStep, msg } from "/shared/global.js";
-import { toCol, toRow } from "/shared/util.js";
 
 const atlas = "/assets/images/art.png";
 const characters = [0, 1, 2, 3].map((idx) => [
-	[0, 64 + 32 * idx],
-	[32, 64 + 32 * idx],
+	[0, 96 + 32 * idx],
+	[32, 96 + 32 * idx],
 ]);
 
 const keys = { // suport arrows and WASD
@@ -147,8 +146,7 @@ export class GamePage extends Component {
 	// static map geometry, written once per match
 	geoClass(idx, start) {
 		if (!start.map.walls.includes(idx)) return "cell";
-		const border = toCol(idx) === 0 || toRow(idx) === 0 || toCol(idx) === cols - 1 || toRow(idx) === rows - 1;
-		return border ? "cell wall" : "cell pillar";
+		return `cell wall-${start.map.wallVariants[idx]}`;
 	}
 
 	// cell objects, re-evaluated per snapshot

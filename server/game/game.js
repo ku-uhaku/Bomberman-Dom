@@ -137,6 +137,7 @@ export class Game {
 		const map = {
 			walls: [...this.world.walls],
 			blocks: [...this.world.blocks],
+			wallVariants: this.world.wallVariants,
 		};
 		const startPlayers = {};
 		for (const p of this.world.players.values())

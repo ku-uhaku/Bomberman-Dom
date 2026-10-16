@@ -1,32 +1,57 @@
-import { el, Component, createApp, Router, navigate } from "./framework/index.js";
+import { el, Component, createApp, Router, navigate, currentPath } from "./framework/index.js";
 import { AppWebSocket } from "./network/webSocket.js";
-import { NicknamePage } from "./pages/nickname.js";
 import { LobbyPage } from "./pages/lobby.js";
 import { GamePage } from "./pages/game.js";
+import { NotFound } from "./pages/notFound.js";
 import { msg } from "/shared/global.js";
 
 class App extends Component {
 	constructor(props) {
-		super(props, { playerId: null });
+		super(props, { playerId: null, inGame: false });
 		this.ws = new AppWebSocket();
 		this.ws.on(msg.joined, (m) => {
 			this.state.playerId = m.playerId;
 		});
-		this.ws.on(msg.start, () => navigate("/game"));
-		this.ws.on(msg.roundEnd, () => navigate("/lobby"));
+		this.ws.on(msg.start, () => {
+			this.state.inGame = true;
+			navigate("/game");
+		});
+		this.ws.on(msg.roundEnd, () => {
+			this.state.inGame = false;
+			navigate("/");
+		});
+		// strict: a guarded or unknown deep-link boots on "/"
+		if (window.location.pathname === "/" && !this.valid(currentPath())) navigate("/");
+	}
+
+	// "/" always, "/game" only while joined and a match is running, anything else unknown
+	valid(path) {
+		if (path === "/") return true;
+		if (path === "/game") return this.state.playerId !== null && this.state.inGame;
+		return false;
+	}
+
+	attach() {
+		this.onHashChange = () => {
+			if (window.location.pathname !== "/") return;
+			if (!this.valid(currentPath())) navigate("/");
+		};
+		window.addEventListener("hashchange", this.onHashChange);
+	}
+
+	detach() {
+		window.removeEventListener("hashchange", this.onHashChange);
 	}
 
 	render() {
+		if (window.location.pathname !== "/") return el(NotFound, {});
 		return el(Router, {
 			routes: {
-				"/": NicknamePage,
-				"/nickname": NicknamePage,
-				"/lobby": LobbyPage,
+				"/": LobbyPage,
 				"/game": GamePage,
 			},
-			fallback: NicknamePage,
-			// guard: /lobby and /game need a joined player
-			guard: (path) => path === "/" || path === "/nickname" || this.state.playerId !== null,
+			fallback: LobbyPage,
+			guard: (path) => this.valid(path),
 			ws: this.ws,
 			playerId: this.state.playerId,
 		});

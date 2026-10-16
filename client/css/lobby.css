@@ -31,7 +31,7 @@
 .credit-sprite {
 	width: 160px;
 	height: 160px;
-	background: var(--muted);
+	background: var(--ink);
 }
 
 .credit-sprite .animated-image {
@@ -43,14 +43,15 @@
 	transform: scaleX(-1);
 }
 
-.nickname-panel {
+.lobby-panel {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	gap: 12px;
 }
 
-.nickname-panel form {
+.lobby-panel form {
 	display: flex;
+	flex-direction: column;
 	gap: 8px;
 }

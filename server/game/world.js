@@ -17,9 +17,10 @@ const powerupTypes = ["bombs", "flames", "speed"];
 
 export class World {
 	constructor(players) {
-		const { walls, blocks, spawns } = createMap(players.length);
+		const { walls, blocks, spawns, wallVariants } = createMap(players.length);
 		this.walls = walls;
 		this.blocks = blocks;
+		this.wallVariants = wallVariants;
 		this.bombs = new Map(); // idx -> Bomb
 		this.explosions = new Map(); // idx -> ttl
 		this.powerups = new Map(); // idx -> type

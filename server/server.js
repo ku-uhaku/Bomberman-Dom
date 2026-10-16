@@ -19,12 +19,6 @@ function sendError(socket, reason) {
 	send(socket, { type: msg.error, reason });
 }
 
-// server helpers
-function respond(res, status, body) {
-	res.writeHead(status, { "content-type": "text/plain; charset=utf-8" });
-	res.end(body);
-}
-
 const server = http.createServer(async (req, res) => {
 	if (req.method !== "GET") {
 		res.writeHead(405, { allow: "GET" });
@@ -33,11 +27,8 @@ const server = http.createServer(async (req, res) => {
 	}
 
 	const urlPath = new URL(req.url, "http://localhost").pathname;
-	const file = urlPath === "/" ? "/client/index.html" : urlPath;
-
-	if (await serveStatic(res, file)) return;
-
-	respond(res, 404, "404 Not Found");
+	if (await serveStatic(res, urlPath)) return;
+	await serveStatic(res, "/client/index.html");
 });
 
 function onMessage(socket, raw) {

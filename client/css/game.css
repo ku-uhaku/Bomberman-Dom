@@ -19,15 +19,18 @@
 	width: var(--tile);
 	height: var(--tile);
 	background-image: url("/assets/images/art.png");
-	background-size: calc(var(--tile) * 6.25);
+	background-size: calc(var(--tile) * 6);
 	image-rendering: pixelated;
 	--x: 1;
 	--y: 0;
 	background-position: calc(var(--tile) * var(--x) * -1) calc(var(--tile) * var(--y) * -1);
 }
 
-.cell.wall { --x: 0; --y: 0; }
-.cell.pillar { --x: 3; --y: 0; }
+.cell.wall-1 { --x: 0; --y: 0; }
+.cell.wall-2 { --x: 3; --y: 0; }
+.cell.wall-3 { --x: 4; --y: 0; }
+.cell.wall-4 { --x: 5; --y: 0; }
+.cell.wall-5 { --x: 0; --y: 1; }
 
 /* cell objects: obstacles, bombs, explosions, powerups */
 .cell[data-obj]::after {
@@ -35,7 +38,7 @@
 	position: absolute;
 	inset: 0;
 	background-image: url("/assets/images/art.png");
-	background-size: calc(var(--tile) * 6.25);
+	background-size: calc(var(--tile) * 6);
 	image-rendering: pixelated;
 	--x: 2;
 	--y: 0;
@@ -43,12 +46,12 @@
 }
 
 .cell[data-obj="block"]::after { --x: 2; --y: 0; }
-.cell[data-obj="bomb"]::after { --x: 0; --y: 1; }
-.cell[data-obj="explosion"]::after { --x: 2; --y: 1; }
+.cell[data-obj="bomb"]::after { --x: 0; --y: 2; }
+.cell[data-obj="explosion"]::after { --x: 2; --y: 2; }
 
-.cell[data-obj="pu-bombs"]::after { --x: 5; --y: 1; }
-.cell[data-obj="pu-flames"]::after { --x: 5; --y: 2; }
-.cell[data-obj="pu-speed"]::after { --x: 5; --y: 3; }
+.cell[data-obj="pu-bombs"]::after { --x: 5; --y: 2; }
+.cell[data-obj="pu-flames"]::after { --x: 5; --y: 3; }
+.cell[data-obj="pu-speed"]::after { --x: 5; --y: 4; }
 
 .player {
 	position: absolute;
