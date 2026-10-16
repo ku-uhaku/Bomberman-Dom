@@ -1,7 +1,8 @@
-import { el, Component } from "../framework/index.js";
+﻿import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
-import { cols, rows, tile, tickMs, baseSpeed, speedStep, msg } from "/shared/global.js";
+import { cols, rows, tile, tickMs, msg } from "/shared/global.js";
+import { PlayerStats } from "../components/playerStats.js";
 
 const atlas = "/client/assets/images/art.png";
 const characters = [0, 1, 2, 3].map((idx) => [
@@ -119,6 +120,7 @@ export class GamePage extends Component {
 		if (this.root) {
 			this.root.style.setProperty("--tile", `${size}px`);
 			this.root.style.setProperty("--obj-scale", String(size / tile));
+			this.root.style.setProperty("--ui", String(size / tile));
 		}
 		this.scale = size / tile;
 		for (const [id, node] of this.players) {
@@ -129,6 +131,7 @@ export class GamePage extends Component {
 
 	// render two ticks in the past so there is always a snapshot pair to lerp between
 	tick(delta) {
+		// fps counter
 		this.frames++;
 		this.fpsAcc += delta;
 		if (this.fpsAcc >= 500) {
@@ -137,20 +140,22 @@ export class GamePage extends Component {
 			this.frames = 0;
 			this.fpsAcc = 0;
 		}
+
 		const buf = this.buffer;
-		if (!buf.length) return;
 		const at = performance.now() - 2 * tickMs;
 		while (buf.length > 2 && buf[1].t <= at) buf.shift();
-		const a = buf[0];
+		const a = buf[0] ?? null;
 		const b = buf[1] ?? a;
-		const k = b.t > a.t ? Math.min(1, Math.max(0, (at - a.t) / (b.t - a.t))) : 1;
-		for (const [id, node] of this.players) {
-			const from = a.players[id];
-			const to = b.players[id];
-			if (!from || !to) continue;
-			this.place(node, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k);
-			if (node.classList.contains("dead") === !to.alive) continue;
-			node.classList.toggle("dead", !to.alive);
+		if (a) {
+			const k = b.t > a.t ? Math.min(1, Math.max(0, (at - a.t) / (b.t - a.t))) : 1;
+			for (const [id, node] of this.players) {
+				const from = a.players[id];
+				const to = b.players[id];
+				if (!from || !to) continue;
+				this.place(node, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k);
+				if (node.classList.contains("dead") === !to.alive) continue;
+				node.classList.toggle("dead", !to.alive);
+			}
 		}
 	}
 
@@ -203,11 +208,7 @@ export class GamePage extends Component {
 		const out = me?.alive === false;
 		return root([
 			el("div", { class: "hud" }, Object.entries(roster).map(([id, p]) =>
-				el("div", { key: id, class: String(id) === String(this.props.playerId) ? "hud-player me" : "hud-player" }, [
-					el("span", {}, p.nickname),
-					el("span", { class: "badges" }, p.alive ? `B${p.maxBombs} F${p.range} S${Math.round((p.speed - baseSpeed) / speedStep)}` : ""),
-					el("span", { class: "hearts" }, p.lives === undefined ? "" : p.alive ? "♥".repeat(p.lives) : "out"),
-				])
+				el(PlayerStats, { key: id, player: p, playerId: this.props.playerId })
 			)),
 			el("div", { class: "fps", ref: (n) => (this.fpsNode = n) }),
 			el(Chat, { ws: this.props.ws }),

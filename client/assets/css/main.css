@@ -1,11 +1,15 @@
-/* design system: 4 colours, sharp corners, monospace, no shadows/gradients */
+@font-face {
+	font-family: "Monogram";
+	src: url("/client/assets/fonts/monogram.ttf") format("truetype");
+	font-display: swap;
+}
 
 :root {
 	--bg: #212123;
 	--muted: #6a536e;
 	--accent: #4b80ca;
 	--ink: #f2f0e5;
-	--font: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+	--font: "Monogram", ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
 }
 
 * {
@@ -24,7 +28,7 @@ body {
 	background: var(--bg);
 	color: var(--ink);
 	font-family: var(--font);
-	font-size: 14px;
+	font-size: 20px;
 	line-height: 1.5;
 }
 
@@ -48,7 +52,7 @@ main {
 }
 
 h2 {
-	font-size: 16px;
+	font-size: 22px;
 	text-transform: uppercase;
 	letter-spacing: 2px;
 	color: var(--muted);
@@ -140,7 +144,7 @@ main li:last-child {
 	max-height: 160px;
 	overflow-y: auto;
 	padding: 4px;
-	font-size: 13px;
+	font-size: 18px;
 	word-break: break-word;
 }
 
@@ -162,6 +166,6 @@ main li:last-child {
 
 .chat button {
 	padding: 4px 8px;
-	font-size: 12px;
+	font-size: 17px;
 }
 

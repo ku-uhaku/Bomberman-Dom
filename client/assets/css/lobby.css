@@ -7,7 +7,7 @@
 	color: var(--muted);
 	text-transform: uppercase;
 	letter-spacing: 2px;
-	font-size: 12px;
+	font-size: 17px;
 }
 
 .credits {
@@ -23,7 +23,7 @@
 	align-items: center;
 	gap: 8px;
 	flex: none;
-	font-size: 16px;
+	font-size: 22px;
 	letter-spacing: 1px;
 }
 
@@ -31,7 +31,8 @@
 .credit-sprite {
 	width: 160px;
 	height: 160px;
-	background: var(--ink);
+	background: var(--muted);
+	border-radius: 12px;
 }
 
 .credit-sprite .animated-image {

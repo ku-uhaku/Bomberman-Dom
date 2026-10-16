@@ -10,6 +10,7 @@ const MIME = {
   ".css": "text/css; charset=utf-8",
   ".png": "image/png",
   ".ico": "image/x-icon",
+  ".ttf": "font/ttf", // for custom font
 };
 
 // resolve urlPath inside ROOT; null if it escapes the root
