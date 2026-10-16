@@ -11,21 +11,23 @@ export class AnimatedImage extends Component {
 		this.idx = 0; // frame index
 		this.applied = null; // last written background-position
 		this.lastFrames = null;
-		this.lastAtlas = null;
-		this.lastCellW = null;
-		this.lastCellH = null;
 		this.lastFlip = null;
 	}
 
 	render() {
 		const { atlas, cellW, cellH, className, flip } = this.props;
-		if (!atlas) throw new Error('AnimatedImage: "atlas" prop is required');
-		if (!(cellW > 0) || !(cellH > 0))
+		if (!atlas) {
+			throw new Error('AnimatedImage: "atlas" prop is required');
+		}
+
+		if (!(cellW > 0) || !(cellH > 0)){
 			throw new Error('AnimatedImage: "cellW"/"cellH" must be > 0');
-		const cls = `animated-image${className ? ` ${className}` : ""}${flip ? " flip" : ""}`;
+		}
+
+		const classs = `animated-image${className ? ` ${className}` : ""}${flip ? " flip" : ""}`;
 		return el("span", {
 			ref: (node) => this.onRef(node),
-			class: cls,
+			class: classs,
 			style: `width:${cellW}px;height:${cellH}px;background-image:url("${atlas}")`,
 		});
 	}
@@ -35,12 +37,14 @@ export class AnimatedImage extends Component {
 		this.applied = null;
 		this.lastFlip = null;
 		this.syncFlip();
-		this.write();
+		this.apply();
 	}
 
 	syncFlip() {
 		const flip = !!this.props.flip;
-		if (!this.node || flip === this.lastFlip) return;
+		if (!this.node || flip === this.lastFlip) {
+			return;
+		}
 		this.node.classList.toggle("flip", flip);
 		this.lastFlip = flip;
 	}
@@ -48,41 +52,44 @@ export class AnimatedImage extends Component {
 	tick(delta) {
 		const p = this.props;
 		const frames = p.frames;
-		if (!this.node || !frames || !frames.length) return;
+		if (!this.node || !frames || !frames.length) {
+			return;
+		}
 		this.syncFlip();
 
-		if (
-			frames !== this.lastFrames ||
-			p.atlas !== this.lastAtlas ||
-			p.cellW !== this.lastCellW ||
-			p.cellH !== this.lastCellH
-		) {
-			// parent swapped the frame set (state change) or the style was re-patched
+		if (frames !== this.lastFrames) {
+			// parent swapped the frame set (e.g. a bomb cell became an explosion)
 			this.lastFrames = frames;
-			this.lastAtlas = p.atlas;
-			this.lastCellW = p.cellW;
-			this.lastCellH = p.cellH;
 			this.time = 0;
 			this.idx = 0;
 			this.applied = null;
-			this.write();
+			this.apply();
 			return;
 		}
 
 		this.time += delta;
-		const steps = (this.time / frameMs) | 0;
-		if (!steps) return;
-		this.time -= steps * frameMs;
+		const steps = Math.floor(this.time / frameMs);
+		if (steps == 0){
+			return;
+		}
+
+		this.time %= frameMs; // keep the remainder for the next tick
 		this.idx = (this.idx + steps) % frames.length;
-		this.write();
+		this.apply();
 	}
 
-	write() {
+	apply() {
 		const frames = this.props.frames;
-		if (!this.node || !frames || !frames.length) return;
+		if (!this.node || !frames || !frames.length) {
+			return;
+		}
+
 		const [x, y] = frames[this.idx % frames.length];
 		const pos = `${-x}px ${-y}px`;
-		if (pos === this.applied) return;
+		if (pos === this.applied){
+			// no change
+			return;
+		}
 		this.node.style.backgroundPosition = pos;
 		this.applied = pos;
 	}

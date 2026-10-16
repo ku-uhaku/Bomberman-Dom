@@ -6,7 +6,7 @@ const icon = 32;
 const scale = icon / 16;
 
 const stats = [
-	{ x: 128, y: 192, value: (p) => (p.alive ? p.lives : "dead") },
+	{ x: 128, y: 192, value: (p) => (p.lives > 0 ? p.lives : "dead") },
 	{ x: 144, y: 192, value: (p) => p.maxBombs },
 	{ x: 160, y: 192, value: (p) => p.range },
 	{ x: 176, y: 192, value: (p) => Math.round((p.speed - baseSpeed) / speedStep) },

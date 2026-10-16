@@ -26,16 +26,24 @@ const spawns = [ // 4 corners
 
 const blockDensity = 0.5;
 
-// spawn cell plus 2 cells inward along both edges to not trap player
-function safeZone([col, row]) {
-  const cells = new Set([toIdx(col, row)]);
-  const dirCol = col < cols / 2 ? 1 : -1;
-  const dirRow = row < rows / 2 ? 1 : -1;
-  for (let step = 1; step <= 2; step++) {
-    cells.add(toIdx(col + dirCol * step, row));
-    cells.add(toIdx(col, row + dirRow * step));
+export function createMap(playerCount) {
+  if (playerCount < 1 || playerCount > maxPlayers)
+    throw new Error(`map: playerCount ${playerCount} out of range`);
+
+  const { walls, wallVariants, open } = parseMap();
+  const safe = new Set();
+  for (const spawn of spawns.slice(0, playerCount)){
+    for (const idx of safeZone(spawn)) {
+      safe.add(idx);
+    }
   }
-  return cells;
+
+  const canBeFilled = open.filter((idx) => !safe.has(idx));
+  const blocks = new Set(
+    shuffle(canBeFilled).slice(0, Math.floor(canBeFilled.length * blockDensity))
+  );
+
+  return { walls, blocks, spawns: spawns.slice(0, playerCount), wallVariants };
 }
 
 function parseMap() {
@@ -46,8 +54,10 @@ function parseMap() {
   const wallVariants = {}; // idx -> sprite variant (1-5)
   const open = [];
   mapTemplate.forEach((line, row) => {
-    if (line.length !== cols)
+    if (line.length !== cols){
       throw new Error(`map: row ${row} has ${line.length} chars, expected ${cols}`);
+    }
+    
     [...line].forEach((char, col) => {
       const idx = toIdx(col, row);
       if (char >= "1" && char <= "6") {
@@ -60,19 +70,15 @@ function parseMap() {
   return { walls, wallVariants, open };
 }
 
-export function createMap(playerCount) {
-  if (playerCount < 1 || playerCount > maxPlayers)
-    throw new Error(`map: playerCount ${playerCount} out of range`);
+// spawn cell plus 2 cells inward along both edges to not trap player
+function safeZone([col, row]) {
+  const cells = new Set([toIdx(col, row)]);
+  const dirCol = col < cols / 2 ? 1 : -1;
+  const dirRow = row < rows / 2 ? 1 : -1;
+  for (let step = 1; step <= 2; step++) {
+    cells.add(toIdx(col + dirCol * step, row));
+    cells.add(toIdx(col, row + dirRow * step));
+  }  
+  return cells;
+}  
 
-  const { walls, wallVariants, open } = parseMap();
-  const safe = new Set();
-  for (const spawn of spawns.slice(0, playerCount))
-    for (const idx of safeZone(spawn)) safe.add(idx);
-
-  const canBeFilled = open.filter((idx) => !safe.has(idx));
-  const blocks = new Set(
-    shuffle(canBeFilled).slice(0, Math.floor(canBeFilled.length * blockDensity))
-  );
-
-  return { walls, blocks, spawns: spawns.slice(0, playerCount), wallVariants };
-}

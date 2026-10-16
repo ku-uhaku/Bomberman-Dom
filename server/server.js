@@ -2,11 +2,11 @@ import http from "node:http";
 import { serveStatic } from "./static.js";
 import { WebSocketServer } from "ws";
 import { msg } from "../shared/global.js";
-import { createRoom, findRoom } from "./rooms.js";
+import { findOrCreateRoom } from "./rooms.js";
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// each room is an independent lobby + chat + game
+// room -> lobby + chat + game
 const rooms = new Set();
 const socketRoom = new WeakMap(); // socket -> room
 
@@ -45,9 +45,13 @@ function onMessage(socket, raw) {
 		case msg.join: {
 			if (typeof data.nickname !== "string")
 				return sendError(socket, "nickname must be a string");
-			if (socketRoom.has(socket)) return sendError(socket, "already joined");
-			const room = findRoom(send, rooms, data.nickname);
+
+			if (socketRoom.has(socket))
+				return sendError(socket, "already joined");
+
+			const room = findOrCreateRoom(send, rooms, data.nickname);
 			if (room.taken) return sendError(socket, "nickname already taken");
+
 			const result = room.lobby.join(socket, data.nickname);
 			if (!result.ok) {
 				room.lobby.onEmpty();
@@ -64,11 +68,13 @@ function onMessage(socket, raw) {
 			const room = socketRoom.get(socket);
 			const player = room?.lobby.findPlayer(socket);
 			if (!player) return sendError(socket, "join first");
+
 			if (data.type === msg.chat) {
 				if (typeof data.text !== "string")
 					return sendError(socket, "text must be a string");
 				const result = room.chat.submit(player, data.text);
-				if (!result.ok) return sendError(socket, result.reason);
+				if (!result.ok)
+					return sendError(socket, result.reason);
 				return;
 			}
 			if (room.game.gameState !== "playing") return;
@@ -89,7 +95,7 @@ function onMessage(socket, raw) {
 const wss = new WebSocketServer({
 	server,
 	maxPayload: 4096,
-	verifyClient: (info) => !info.req.headers.origin || info.req.headers.origin === `http://${info.req.headers.host}`,
+	verifyClient: (info) => info.req.headers.origin === `http://${info.req.headers.host}`,
 });
 
 wss.on("connection", (socket) => {

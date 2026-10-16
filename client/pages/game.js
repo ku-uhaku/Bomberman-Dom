@@ -1,4 +1,4 @@
-﻿import { el, Component } from "../framework/index.js";
+import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { cols, rows, tile, tickMs, msg, event_names } from "/shared/global.js";
@@ -36,11 +36,11 @@ export class GamePage extends Component {
 		this.flips = new Map(); // playerId -> facing left
 		this.buffer = []; // { t, players } snapshots, oldest first
 		this.held = new Set(); // pressed movement key codes
-		this.sent = { x: 0, y: 0 }; // last intent sent
+		this.sent = { x: 0, y: 0 }; // last movement sent
 		this.fpsNode = null;
 		this.frames = 0;
 		this.fpsAcc = 0;
-		this.cache = null; // per-snapshot Sets for O(1) objClass
+		this.cache = null; // snapshots
 	}
 
 	attach() {
@@ -103,17 +103,32 @@ export class GamePage extends Component {
 	}
 
 	key(e, down) {
-		if (/^(input|textarea)$/i.test(e.target.tagName)) return;
+		const t = e.target.tagName;
+		if (t === "INPUT" || t === "TEXTAREA"){
+			// prevent movement while typing in chat
+			return;
+		}
+
 		if (e.code === "Space") {
 			e.preventDefault();
-			if (down && !e.repeat) this.props.ws.sendMessage({ type: msg.bomb });
+			if (down && !e.repeat){
+				this.props.ws.sendMessage({ type: msg.bomb });
+			}
 			return;
 		}
 		const dir = keys[e.code];
-		if (!dir) return;
+		if (!dir){
+			return;
+		}
+
 		e.preventDefault();
-		if (down) this.held.add(e.code);
-		else this.held.delete(e.code);
+		if (down){
+			this.held.add(e.code);
+		}
+		else {
+			this.held.delete(e.code);
+		}
+
 		let x = 0;
 		let y = 0;
 		for (const code of this.held) {
@@ -122,7 +137,10 @@ export class GamePage extends Component {
 		}
 		x = Math.sign(x);
 		y = Math.sign(y);
-		if (x === this.sent.x && y === this.sent.y) return;
+		if (x === this.sent.x && y === this.sent.y){
+			return;
+		}
+
 		this.sent = { x, y };
 		this.props.ws.sendMessage({ type: msg.input, x, y });
 	}
@@ -137,7 +155,9 @@ export class GamePage extends Component {
 		this.scale = size / tile;
 		for (const [id, node] of this.players) {
 			const p = this.state.snap?.players[id] ?? this.state.start?.players[id];
-			if (p) this.place(node, p.x, p.y);
+			if (p){
+				this.place(node, p.x, p.y);
+			}
 		}
 	}
 
@@ -159,6 +179,7 @@ export class GamePage extends Component {
 		const a = buf[0] ?? null;
 		const b = buf[1] ?? a;
 		if (a) {
+			// TODO: complexity
 			const k = b.t > a.t ? Math.min(1, Math.max(0, (at - a.t) / (b.t - a.t))) : 1;
 			for (const [id, node] of this.players) {
 				const from = a.players[id];
@@ -168,8 +189,8 @@ export class GamePage extends Component {
 				const dx = to.x - from.x;
 				if (dx > 1) this.setFlip(id, node, false);
 				else if (dx < -1) this.setFlip(id, node, true);
-				if (node.classList.contains("dead") === !to.alive) continue;
-				node.classList.toggle("dead", !to.alive);
+				if (node.classList.contains("dead") === to.lives <= 0) continue;
+				node.classList.toggle("dead", to.lives <= 0);
 			}
 		}
 	}
@@ -205,7 +226,9 @@ export class GamePage extends Component {
 			const cell = { key: idx, class: this.geoClass(idx, start) };
 			const obj = this.objClass(idx, start);
 			const frames = objFrames[obj];
-			if (obj.startsWith("block-")) cell["data-obj"] = obj;
+			if (obj.startsWith("block-")){
+				cell["data-obj"] = obj;
+			}
 			cells.push(el("div", cell, frames ? [el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames })] : []));
 		}
 
@@ -222,7 +245,7 @@ export class GamePage extends Component {
 
 		const roster = snap ? snap.players : start.players;
 		const me = snap?.players[this.props.playerId];
-		const out = me?.alive === false;
+		const out = me?.lives === 0;
 		return root([
 			el("div", { class: "hud" }, Object.entries(roster).map(([id, p]) =>
 				el(PlayerStats, { key: id, player: p, playerId: this.props.playerId })
@@ -255,3 +278,4 @@ export class GamePage extends Component {
 		node.firstChild?.classList.toggle("flip", flip);
 	}
 }
+

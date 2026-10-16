@@ -18,7 +18,6 @@ export class Player {
 		this.x = toCenterX(idx);
 		this.y = toCenterY(idx);
 		this.lives = lives;
-		this.alive = true;
 		this.maxBombs = 1;
 		this.range = blastRange;
 		this.speed = baseSpeed;
@@ -29,13 +28,15 @@ export class Player {
 		return toIdx(Math.floor(this.x / tile), Math.floor(this.y / tile));
 	}
 
-	move(world, intent, dt) {
-		const length = Math.hypot(intent.x, intent.y);
-		if (length === 0) return;
+	move(world, movement, dt) {
+		const length = Math.sqrt(movement.x * movement.x + movement.y * movement.y);
+		if (length === 0){
+			return;
+		}
 
 		const secs = dt / 1000;
-		const vx = (intent.x / length) * this.speed * secs;
-		const vy = (intent.y / length) * this.speed * secs;
+		const vx = (movement.x / length) * this.speed * secs;
+		const vy = (movement.y / length) * this.speed * secs;
 
 		const nx = this.x + vx;
 		if (!world.collides(nx, this.y)) this.x = nx;
@@ -60,18 +61,16 @@ export class Player {
 		this.lives -= 1;
 		this.iFrames = iFrames;
 		if (this.lives <= 0) {
-			this.alive = false;
 			return true;
 		}
 		return false;
 	}
 
-	toWire() {
+	toJson() {
 		return {
 			x: Math.round(this.x),
 			y: Math.round(this.y),
 			lives: this.lives,
-			alive: this.alive,
 			maxBombs: this.maxBombs,
 			range: this.range,
 			speed: this.speed,
@@ -79,3 +78,5 @@ export class Player {
 		};
 	}
 }
+
+

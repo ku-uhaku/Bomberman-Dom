@@ -1,21 +1,17 @@
-import { msg, maxPlayers, graceMs } from "../shared/global.js";
+import { msg, maxPlayers } from "../shared/global.js";
 
 export class Lobby {
 	constructor(send) {
 		this.send = send;
 		this.players = new Map(); // id -> { id, nickname, socket }
-		this.nextId = 1;
-		this.game = null; // set by server: owns the timer machine
+		this.nextPlayerId = 1;
+		this.game = null; // set by server
 		this.onEmpty = null;
 	}
 
 	findPlayer(socket) {
 		for (const p of this.players.values()) if (p.socket === socket) return p;
 		return null;
-	}
-
-	sendAll(obj) {
-		for (const p of this.active()) this.send(p.socket, obj);
 	}
 
 	join(socket, nickname) {
@@ -29,38 +25,36 @@ export class Lobby {
 		if (this.active().some((p) => p.nickname.toLowerCase() === name.toLowerCase()))
 			return { ok: false, reason: "nickname already taken" };
 
-		const id = this.nextId++;
-		this.players.set(id, { id, nickname: name, socket, departed: false });
+		const id = this.nextPlayerId++;
+		this.players.set(id, { id, nickname: name, socket });
 		socket.on("close", () => this.leave(id));
 		this.game.sync();
 		return { ok: true, playerId: id };
 	}
 
-	// active players (departed ones only kept for the grace window)
 	active() {
-		return [...this.players.values()].filter((p) => !p.departed);
+		return [...this.players.values()];
 	}
 
 	leave(id) {
 		const player = this.players.get(id);
-		if (!player || player.departed) return;
-		// nickname freed at once, seat kept for graceMs
-		player.departed = true;
-		setTimeout(() => {
-			this.players.delete(id);
-			this.game.inputs.delete(id);
-			this.game.sync();
-			if (this.onEmpty) this.onEmpty();
-		}, graceMs);
+		if (!player) return;
+		this.players.delete(id);
+		this.game.inputs.delete(id);
+		this.game.sync();
+		if (this.onEmpty) this.onEmpty();
 	}
 
 	sendLobby() {
-		const players = this.active().map((p) => ({ id: p.id, nickname: p.nickname }));
 		this.sendAll({
 			type: msg.lobby,
-			players,
+			players: this.active().map((p) => ({ id: p.id, nickname: p.nickname })),
 			queueEndsAt: this.game.queueEndsAt,
 			countdownEndsAt: this.game.countdownEndsAt,
 		});
+	}
+
+	sendAll(obj) {
+		for (const p of this.active()) this.send(p.socket, obj);
 	}
 }

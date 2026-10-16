@@ -4,23 +4,25 @@ import { World } from "./world.js";
 export class Game {
 	constructor(lobby) {
 		this.lobby = lobby;
+		this.world = null;
+		
+		this.inputs = new Map(); // playerId -> { x, y }
+		this.pendingBombs = new Set(); // playerIds this tick
+		
 		this.gameState = "idle"; // idle | queue | countdown | playing | over
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
-		this.world = null;
-		this.interval = null; // gameState deadline checker (250ms)
-		this.roundTimer = null; // pause after game_over before the next round
-		this.loopTimer = null; // 30Hz simulation loop
+		this.intervalId = null; // deadline checker setInterval
+		this.roundTimer = null; // pause after game_over
+		this.loopTimer = null; // 30FPS
 		this.loopAcc = 0;
 		this.loopLast = 0;
-		this.inputs = new Map(); // playerId -> { x, y }
-		this.pendingBombs = new Set(); // playerIds this tick
 	}
 
 	sync() {
 		if (this.gameState === "playing") {
 			for (const p of this.world.players.values())
-				if (!this.lobby.players.has(p.id)) p.alive = false;
+				if (!this.lobby.players.has(p.id)) p.lives = 0;
 		} else if (this.gameState !== "over") this.evaluate();
 		this.lobby.sendLobby();
 	}
@@ -36,7 +38,7 @@ export class Game {
 				this.countdownEndsAt = null;
 				this.queueEndsAt = Date.now() + queueMs;
 				this.stop();
-				this.interval = setInterval(() => this.tick(), 250);
+				this.intervalId = setInterval(() => this.checkDeadlines(), 250);
 			}
 		} else {
 			this.reset();
@@ -50,7 +52,7 @@ export class Game {
 		this.countdownEndsAt = Date.now() + countdownMs;
 		// run
 		this.stop();
-		this.interval = setInterval(() => this.tick(), 250);
+		this.intervalId = setInterval(() => this.checkDeadlines(), 250);
 	}
 
 	reset() {
@@ -65,28 +67,21 @@ export class Game {
 	}
 
 	stop() {
-		if (this.interval) {
-			clearInterval(this.interval);
-			this.interval = null;
+		if (this.intervalId) {
+			clearInterval(this.intervalId);
+			this.intervalId = null;
 		}
 	}
 
-	tick() {
+	checkDeadlines() {
 		const now = Date.now();
 		if (this.gameState === "queue" && now >= this.queueEndsAt) {
 			if (this.lobby.active().length >= 2) this.startCountdown();
 			else this.reset();
 			this.lobby.sendLobby();
 		} else if (this.gameState === "countdown" && now >= this.countdownEndsAt) {
-			this.beginMatch();
+			this.beginGame();
 		}
-	}
-
-	startLoop() {
-		this.stopLoop();
-		this.loopLast = Date.now();
-		this.loopAcc = 0;
-		this.loopTimer = setInterval(() => this.loopTick(), tickMs);
 	}
 
 	stopLoop() {
@@ -105,21 +100,22 @@ export class Game {
 			this.loopAcc -= tickMs;
 
 			// game loop
-			const events = this.world.step(tickMs, this.inputs, this.pendingBombs);
+			const events = this.world.tick(tickMs, this.inputs, this.pendingBombs);
 			this.pendingBombs.clear();
 			this.lobby.sendAll({ type: msg.state, snapshot: this.world.syncClient(), events });
 
 			const over = events.find((e) => e.type === event_names.gameOver);
 			if (over) {
+				// end game
 				this.stopLoop();
 				this.gameState = "over";
 				this.lobby.sendAll({ type: msg.gameOver, winnerId: over.winnerId });
-				this.roundTimer = setTimeout(() => this.endRound(), roundEndMs);
+				this.roundTimer = setTimeout(() => this.endGame(), roundEndMs);
 			}
 		}
 	}
 
-	beginMatch() {
+	beginGame() {
 		this.stop();
 		this.gameState = "playing";
 		this.queueEndsAt = null;
@@ -144,17 +140,25 @@ export class Game {
 
 		this.lobby.sendAll({ type: msg.start, map, players: startPlayers });
 
-		this.startLoop();
+		// start loop
+		this.stopLoop();
+		this.loopLast = Date.now();
+		this.loopAcc = 0;
+		this.loopTimer = setInterval(() => this.loopTick(), tickMs);
 	}
 
 	// game_over -> roundEndMs -> back to the lobby
-	endRound() {
+	endGame() {
 		this.roundTimer = null;
-		if (this.gameState !== "over") return;
+		if (this.gameState !== "over")
+			return;
+		
 		this.gameState = "idle";
 		this.lobby.sendAll({ type: msg.roundEnd });
 		this.evaluate();
 		this.lobby.sendLobby();
+		
 		if (this.lobby.onEmpty) this.lobby.onEmpty();
 	}
 }
+

@@ -6,12 +6,6 @@ export class Chat extends Component {
 		super(props, { messages: [], value: "", error: "" });
 		this.unsubs = [];
 		this.listNode = null;
-		this.stick = true; // follow new messages unless the user scrolled up
-		// scroll doesn't bubble, so it can't go through the framework's event delegation
-		this.onScroll = () => {
-			const n = this.listNode;
-			this.stick = n.scrollHeight - n.scrollTop - n.clientHeight < 24;
-		};
 	}
 
 	attach() {
@@ -33,12 +27,11 @@ export class Chat extends Component {
 	detach() {
 		this.unsubs.forEach((off) => off());
 		this.unsubs = [];
-		if (this.listNode) this.listNode.removeEventListener("scroll", this.onScroll);
 		this.listNode = null;
 	}
 
 	scroll() {
-		if (this.stick && this.listNode) this.listNode.scrollTop = this.listNode.scrollHeight;
+		if (this.listNode) this.listNode.scrollTop = this.listNode.scrollHeight;
 	}
 
 	opacity(i) {
@@ -53,9 +46,7 @@ export class Chat extends Component {
 			el("div", {
 				class: "chat-messages",
 				ref: (n) => {
-					if (this.listNode && this.listNode !== n) this.listNode.removeEventListener("scroll", this.onScroll);
 					this.listNode = n;
-					n.addEventListener("scroll", this.onScroll);
 					this.scroll();
 				},
 			}, messages.map((m, i) =>

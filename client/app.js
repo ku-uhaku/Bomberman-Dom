@@ -25,11 +25,9 @@ class App extends Component {
 			this.state.inGame = false;
 			navigate("/");
 		});
-		// strict: a guarded or unknown deep-link boots on "/"
 		if (window.location.pathname === "/" && !this.valid(currentPath())) navigate("/");
 	}
 
-	// "/" always, "/game" only while joined and a match is running, anything else unknown
 	valid(path) {
 		if (path === "/") return true;
 		if (path === "/game") return this.state.playerId !== null && this.state.inGame;
