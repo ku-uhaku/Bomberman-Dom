@@ -3,7 +3,7 @@ import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { msg, maxPlayers, tile } from "/shared/global.js";
 
-const atlas = "/assets/images/art.png";
+const atlas = "/client/assets/images/art.png";
 
 // frame 1 of each player sprite, matching characters[0] / characters[1] in game.js
 const credits = [
@@ -119,7 +119,7 @@ export class LobbyPage extends Component {
 			];
 
 		return el("main", {}, [
-			el("img", { class: "title", src: "/assets/images/title.png", alt: "Bomberman" }),
+			el("img", { class: "title", src: "/client/assets/images/title.png", alt: "Bomberman" }),
 			el("p", { class: "credits-label" }, "A game by"),
 			el("div", { class: "credits" }, [
 				this.credit(credits[0], "left"),

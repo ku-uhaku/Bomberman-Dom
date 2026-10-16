@@ -3,11 +3,19 @@ import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { cols, rows, tile, tickMs, baseSpeed, speedStep, msg } from "/shared/global.js";
 
-const atlas = "/assets/images/art.png";
+const atlas = "/client/assets/images/art.png";
 const characters = [0, 1, 2, 3].map((idx) => [
 	[0, 96 + 32 * idx],
 	[32, 96 + 32 * idx],
 ]);
+
+const objFrames = {
+	bomb: [[0, 64], [32, 64]],
+	explosion: [[64, 64], [96, 64]],
+	"pu-bombs": [[128, 64], [160, 64]],
+	"pu-flames": [[128, 96], [160, 96]],
+	"pu-speed": [[128, 128], [160, 128]],
+};
 
 const keys = { // suport arrows and WASD
 	KeyW: [0, -1], ArrowUp: [0, -1],
@@ -108,7 +116,10 @@ export class GamePage extends Component {
 
 	fit() {
 		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, (window.innerHeight - 160) / rows)));
-		if (this.root) this.root.style.setProperty("--tile", `${size}px`);
+		if (this.root) {
+			this.root.style.setProperty("--tile", `${size}px`);
+			this.root.style.setProperty("--obj-scale", String(size / tile));
+		}
 		this.scale = size / tile;
 		for (const [id, node] of this.players) {
 			const p = this.state.snap?.players[id] ?? this.state.start?.players[id];
@@ -171,8 +182,9 @@ export class GamePage extends Component {
 		for (let idx = 0; idx < cols * rows; idx++) {
 			const cell = { key: idx, class: this.geoClass(idx, start) };
 			const obj = this.objClass(idx, start);
-			if (obj) cell["data-obj"] = obj;
-			cells.push(el("div", cell));
+			const frames = objFrames[obj];
+			if (obj === "block") cell["data-obj"] = obj;
+			cells.push(el("div", cell, frames ? [el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames })] : []));
 		}
 
 		const players = Object.entries(start.players).map(([id, p]) =>
