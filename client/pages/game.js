@@ -1,9 +1,11 @@
 ﻿import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
-import { cols, rows, tile, tickMs, msg } from "/shared/global.js";
+import { cols, rows, tile, tickMs, msg, event_names } from "/shared/global.js";
+import { playSound } from "../global/sound.js";
 import { PlayerStats } from "../components/playerStats.js";
 
+import { toCol, toRow } from "/shared/util.js";
 const atlas = "/client/assets/images/art.png";
 const characters = [0, 1, 2, 3].map((idx) => [
 	[0, 96 + 32 * idx],
@@ -31,6 +33,7 @@ export class GamePage extends Component {
 		this.root = null;
 		this.scale = 1;
 		this.players = new Map(); // playerId -> node
+		this.flips = new Map(); // playerId -> facing left
 		this.buffer = []; // { t, players } snapshots, oldest first
 		this.held = new Set(); // pressed movement key codes
 		this.sent = { x: 0, y: 0 }; // last intent sent
@@ -50,6 +53,14 @@ export class GamePage extends Component {
 		this.offStart = ws.on(msg.start, (m) => this.reset(m));
 		this.offState = ws.on(msg.state, (m) => {
 			this.buffer.push({ t: performance.now(), players: m.snapshot.players });
+			const me = String(this.props.playerId);
+			for (const e of m.events ?? []) {
+				if (e.type === event_names.bomb) playSound("bombPlaced");
+				else if (e.type === event_names.explode) playSound("explosion");
+				else if (e.type === event_names.hit && String(e.playerId) === me) playSound("damaged");
+				else if (e.type === event_names.died) playSound("dead");
+				else if (e.type === event_names.powerupPicked && String(e.playerId) === me) playSound("powerUp");
+			}
 			this.cache = {
 				blocks: new Set(m.snapshot.blocks),
 				bombs: new Set(m.snapshot.bombs.map((b) => b.i)),
@@ -82,6 +93,7 @@ export class GamePage extends Component {
 		this.buffer = [];
 		this.cache = null;
 		this.players.clear();
+		this.flips.clear();
 		this.held.clear();
 		this.sent = { x: 0, y: 0 };
 		this.fit();
@@ -153,6 +165,9 @@ export class GamePage extends Component {
 				const to = b.players[id];
 				if (!from || !to) continue;
 				this.place(node, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k);
+				const dx = to.x - from.x;
+				if (dx > 1) this.setFlip(id, node, false);
+				else if (dx < -1) this.setFlip(id, node, true);
 				if (node.classList.contains("dead") === !to.alive) continue;
 				node.classList.toggle("dead", !to.alive);
 			}
@@ -165,15 +180,17 @@ export class GamePage extends Component {
 		return `cell wall-${start.map.wallVariants[idx]}`;
 	}
 
+	blockVariant(idx) { return (toCol(idx) + toRow(idx)) % 3; }
+
 	// cell objects, re-evaluated per snapshot
 	objClass(idx, start) {
 		const c = this.cache;
-		if (!c) return start.map.blocks.includes(idx) ? "block" : "";
+		if (!c) return start.map.blocks.includes(idx) ? `block-${this.blockVariant(idx)}` : "";
 		if (c.explosions.has(idx)) return "explosion";
 		if (c.bombs.has(idx)) return "bomb";
 		const pu = c.powerups.get(idx);
 		if (pu) return `pu-${pu}`;
-		return c.blocks.has(idx) ? "block" : "";
+		return c.blocks.has(idx) ? `block-${this.blockVariant(idx)}` : "";
 	}
 
 	render() {
@@ -188,7 +205,7 @@ export class GamePage extends Component {
 			const cell = { key: idx, class: this.geoClass(idx, start) };
 			const obj = this.objClass(idx, start);
 			const frames = objFrames[obj];
-			if (obj === "block") cell["data-obj"] = obj;
+			if (obj.startsWith("block-")) cell["data-obj"] = obj;
 			cells.push(el("div", cell, frames ? [el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames })] : []));
 		}
 
@@ -200,7 +217,7 @@ export class GamePage extends Component {
 					if (!this.players.has(id)) this.place(node, p.x, p.y);
 					this.players.set(id, node);
 				},
-			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[(Number(id) - 1) % characters.length] }))
+			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[(Number(id) - 1) % characters.length], flip: this.flips.get(id) ?? false }))
 		);
 
 		const roster = snap ? snap.players : start.players;
@@ -230,5 +247,11 @@ export class GamePage extends Component {
 	place(node, x, y) {
 		const s = this.scale;
 		node.style.transform = `translate(${(x - tile / 2) * s}px, ${(y - tile / 2) * s}px) scale(${s})`;
+	}
+
+	setFlip(id, node, flip) {
+		if (this.flips.get(id) === flip) return;
+		this.flips.set(id, flip);
+		node.firstChild?.classList.toggle("flip", flip);
 	}
 }

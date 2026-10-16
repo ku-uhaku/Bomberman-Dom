@@ -2,6 +2,7 @@ import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { msg, maxPlayers, tile } from "/shared/global.js";
+import { playSound } from "../global/sound.js";
 
 const atlas = "/client/assets/images/art.png";
 
@@ -16,6 +17,7 @@ export class LobbyPage extends Component {
 		super(props, { lobby: null, nickname: "", error: "", busy: false });
 		this.labelNode = null;
 		this.acc = 0;
+		this.lastSec = null;
 	}
 
 	attach() {
@@ -65,9 +67,14 @@ export class LobbyPage extends Component {
 	label() {
 		const lobby = this.state.lobby;
 		if (!lobby) return "";
-		const left = (at) => Math.max(0, Math.ceil((at - Date.now()) / 1000));
-		if (lobby.countdownEndsAt) return `game starts in ${left(lobby.countdownEndsAt)}`;
-		if (lobby.queueEndsAt) return `waiting for players — ${left(lobby.queueEndsAt)}s left`;
+		if (lobby.countdownEndsAt) {
+			const left = Math.max(0, Math.ceil((lobby.countdownEndsAt - Date.now()) / 1000));
+			return `game starts in ${left}`;
+		}
+		if (lobby.queueEndsAt) {
+			const left = Math.max(0, Math.ceil((lobby.queueEndsAt - Date.now()) / 1000));
+			return `waiting for players — ${left}s left`;
+		}
 		return "waiting for players…";
 	}
 
@@ -79,14 +86,22 @@ export class LobbyPage extends Component {
 		if (!this.labelNode) return;
 		const text = this.label();
 		if (this.labelNode.textContent !== text) this.labelNode.textContent = text;
+		const sec = this.state.lobby?.countdownEndsAt
+			? Math.max(0, Math.ceil((this.state.lobby.countdownEndsAt - Date.now()) / 1000))
+			: null;
+		if (sec !== null && sec !== this.lastSec) {
+			this.lastSec = sec;
+			playSound("timer");
+		}
+		if (sec === null) this.lastSec = null;
 	}
 
-	credit(c, key, flip) {
+	credit(credit, key, flip) {
 		return el("div", { class: "credit", key }, [
-			el("div", { class: flip ? "credit-sprite flip" : "credit-sprite" },
-				el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: c.frames })
+			el("div", { class: "credit-sprite" },
+				el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: credit.frames, flip })
 			),
-			el("span", {}, c.name),
+			el("span", {class: "credit-label"}, credit.name),
 		]);
 	}
 
@@ -120,12 +135,12 @@ export class LobbyPage extends Component {
 
 		return el("main", {}, [
 			el("img", { class: "title", src: "/client/assets/images/title.png", alt: "Bomberman" }),
-			el("p", { class: "credits-label" }, "A game by"),
 			el("div", { class: "credits" }, [
 				this.credit(credits[0], "left"),
 				el("div", { class: "lobby-panel" }, panel),
 				this.credit(credits[1], "right", true),
 			]),
+			el("p", { class: "credits-label" }, "Project By"),
 			joined ? el(Chat, { ws: this.props.ws }) : null,
 		]);
 	}

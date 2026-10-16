@@ -1,9 +1,10 @@
 import { el, Component, createApp, Router, navigate, currentPath } from "./framework/index.js";
-import { AppWebSocket } from "./network/webSocket.js";
+import { AppWebSocket } from "./global/webSocket.js";
 import { LobbyPage } from "./pages/lobby.js";
 import { GamePage } from "./pages/game.js";
 import { NotFound } from "./pages/notFound.js";
 import { msg } from "/shared/global.js";
+import { playSound } from "./global/sound.js";
 
 class App extends Component {
 	constructor(props) {
@@ -14,7 +15,11 @@ class App extends Component {
 		});
 		this.ws.on(msg.start, () => {
 			this.state.inGame = true;
+			playSound("gameStarted");
 			navigate("/game");
+		});
+		this.ws.on(msg.gameOver, () => {
+			playSound("gameOver");
 		});
 		this.ws.on(msg.roundEnd, () => {
 			this.state.inGame = false;

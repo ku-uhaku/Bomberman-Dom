@@ -42,9 +42,9 @@ export class Chat extends Component {
 	}
 
 	opacity(i) {
-		return i < chatFade && this.state.messages.length > chatFade
-			? (i + 1) / chatFade
-			: 1;
+		if (i >= chatFade) return 1;
+		if (this.state.messages.length <= chatFade) return 1;
+		return (i + 1) / chatFade;
 	}
 
 	render() {

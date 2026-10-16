@@ -32,8 +32,9 @@
 .cell.wall-3 { --x: 4; --y: 0; }
 .cell.wall-4 { --x: 5; --y: 0; }
 .cell.wall-5 { --x: 0; --y: 1; }
+.cell.wall-6 { --x: 3; --y: 1; }
 
-/* destructible blocks (bombs, explosions, powerups are AnimatedImage children) */
+/* blocks (bombs, explosions, powerups are AnimatedImage children) */
 .cell[data-obj]::after {
 	content: "";
 	position: absolute;
@@ -41,10 +42,12 @@
 	background-image: url("/client/assets/images/art.png");
 	background-size: calc(var(--tile) * 6);
 	image-rendering: pixelated;
-	--x: 2;
-	--y: 0;
 	background-position: calc(var(--tile) * var(--x) * -1) calc(var(--tile) * var(--y) * -1);
 }
+
+.cell[data-obj="block-0"]::after { --x: 2; --y: 0; }
+.cell[data-obj="block-1"]::after { --x: 1; --y: 1; }
+.cell[data-obj="block-2"]::after { --x: 2; --y: 1; }
 
 .cell .animated-image {
 	position: absolute;
@@ -66,27 +69,29 @@
 
 .player.dead { display: none; }
 
+.player .animated-image.flip { transform: scaleX(-1); }
+
 .hud {
-	--icon: 3;
 	display: flex;
 	gap: 0.75em;
-	align-items: flex-start;
 	font-size: calc(var(--tile) * 0.7);
 }
 
 .hud-player {
 	display: flex;
 	flex-direction: column;
-	gap: 0.2em;
 	font-size: 1em;
 	color: var(--muted);
 }
 
+.hud-player > span{
+	text-align: center;
+}
+
 .hud-player.me { color: var(--ink); }
-.stats { display: flex; gap: 0.4em; }
-.stat { display: flex; flex-direction: column; align-items: center; gap: 0.1em; }
-.stat-icon { width: calc(var(--tile) * var(--icon) / 2); height: calc(var(--tile) * var(--icon) / 2); overflow: hidden; }
-.stat-icon .animated-image { transform: scale(calc(var(--ui) * var(--icon))); transform-origin: top left; }
+.stats { display: flex; gap: 0.1em; }
+.stat { display: flex; flex-direction: column; align-items: center; }
+.stat-img { display: block; image-rendering: pixelated; }
 .stat-value { font-size: 0.875em; }
 
 .overlay {

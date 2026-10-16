@@ -19,7 +19,6 @@ export class Game {
 
 	sync() {
 		if (this.gameState === "playing") {
-			// players removed after the disconnect grace die; step() then checks for a winner
 			for (const p of this.world.players.values())
 				if (!this.lobby.players.has(p.id)) p.alive = false;
 		} else if (this.gameState !== "over") this.evaluate();

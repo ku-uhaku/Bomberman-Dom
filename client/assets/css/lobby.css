@@ -1,6 +1,7 @@
 .title {
 	width: 700px;
 	height: auto;
+	margin-bottom: 100px;
 }
 
 .credits-label {
@@ -25,6 +26,11 @@
 	flex: none;
 	font-size: 22px;
 	letter-spacing: 1px;
+	flex-direction: column;
+}
+
+.credit-label{
+	color: var(--muted);
 }
 
 /* reserves the scaled box: transform doesn't affect layout (tile 32 × scale 5) */
@@ -40,8 +46,9 @@
 	transform-origin: top left;
 }
 
-.credit-sprite.flip {
-	transform: scaleX(-1);
+.credit-sprite .animated-image.flip {
+	transform: scale(-5, 5) translateX(-32px);
+	transform-origin: top left;
 }
 
 .lobby-panel {

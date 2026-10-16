@@ -20,8 +20,8 @@ export const powerupChance = 0.3;
 export const caps = { bombs: 6, flames: 6, speed: 5 };
 
 export const tickMs = 1000 / 30;
-export const queueMs = 20000;
-export const countdownMs = 10000;
+export const queueMs = 10//20000;
+export const countdownMs = 10//10000;
 export const roundEndMs = 10000;
 export const graceMs = 4000;
 

@@ -39,14 +39,14 @@ img {
 	image-rendering: pixelated;
 }
 
-/* ---------- pages (nickname, lobby) ---------- */
+/* ---------- pages ---------- */
 
 main {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	gap: 16px;
+	gap: 30px;
 	height: 100%;
 	padding: 16px;
 }

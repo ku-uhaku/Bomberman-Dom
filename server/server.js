@@ -89,11 +89,7 @@ function onMessage(socket, raw) {
 const wss = new WebSocketServer({
 	server,
 	maxPayload: 4096,
-	verifyClient: (info) => {
-		const origin = info.req.headers.origin;
-		if (!origin) return true; // non-browser client (curl/test): no origin to check
-		return origin === `http://${info.req.headers.host}`;
-	},
+	verifyClient: (info) => !info.req.headers.origin || info.req.headers.origin === `http://${info.req.headers.host}`,
 });
 
 wss.on("connection", (socket) => {

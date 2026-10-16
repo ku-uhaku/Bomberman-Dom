@@ -1,8 +1,8 @@
 import { cols, rows, maxPlayers } from "../../shared/global.js";
 import { shuffle, toIdx } from "../../shared/util.js";
 
-const mapTemplate = [ // match global.js cols/rows; wall variants 1-5, open '.'
-  "121144121111321",
+const mapTemplate = [
+  "126661124411321",
   "1.............1",
   "1.1.1.1.1.1.1.1",
   "3.............1",
@@ -50,7 +50,7 @@ function parseMap() {
       throw new Error(`map: row ${row} has ${line.length} chars, expected ${cols}`);
     [...line].forEach((char, col) => {
       const idx = toIdx(col, row);
-      if (char >= "1" && char <= "5") {
+      if (char >= "1" && char <= "6") {
         walls.add(idx);
         wallVariants[idx] = Number(char);
       } else if (char === ".") open.push(idx);

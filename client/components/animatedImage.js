@@ -1,7 +1,7 @@
 import { el, Component } from "../framework/index.js";
 
-const FPS = 4;
-const FRAME_MS = 1000 / FPS;
+const fps = 4;
+const frameMs = 1000 / fps;
 
 export class AnimatedImage extends Component {
 	constructor(props) {
@@ -14,16 +14,18 @@ export class AnimatedImage extends Component {
 		this.lastAtlas = null;
 		this.lastCellW = null;
 		this.lastCellH = null;
+		this.lastFlip = null;
 	}
 
 	render() {
-		const { atlas, cellW, cellH, className } = this.props;
+		const { atlas, cellW, cellH, className, flip } = this.props;
 		if (!atlas) throw new Error('AnimatedImage: "atlas" prop is required');
 		if (!(cellW > 0) || !(cellH > 0))
 			throw new Error('AnimatedImage: "cellW"/"cellH" must be > 0');
+		const cls = `animated-image${className ? ` ${className}` : ""}${flip ? " flip" : ""}`;
 		return el("span", {
 			ref: (node) => this.onRef(node),
-			class: className ? `animated-image ${className}` : "animated-image",
+			class: cls,
 			style: `width:${cellW}px;height:${cellH}px;background-image:url("${atlas}")`,
 		});
 	}
@@ -31,13 +33,23 @@ export class AnimatedImage extends Component {
 	onRef(node) {
 		this.node = node;
 		this.applied = null;
+		this.lastFlip = null;
+		this.syncFlip();
 		this.write();
+	}
+
+	syncFlip() {
+		const flip = !!this.props.flip;
+		if (!this.node || flip === this.lastFlip) return;
+		this.node.classList.toggle("flip", flip);
+		this.lastFlip = flip;
 	}
 
 	tick(delta) {
 		const p = this.props;
 		const frames = p.frames;
 		if (!this.node || !frames || !frames.length) return;
+		this.syncFlip();
 
 		if (
 			frames !== this.lastFrames ||
@@ -58,9 +70,9 @@ export class AnimatedImage extends Component {
 		}
 
 		this.time += delta;
-		const steps = (this.time / FRAME_MS) | 0;
+		const steps = (this.time / frameMs) | 0;
 		if (!steps) return;
-		this.time -= steps * FRAME_MS;
+		this.time -= steps * frameMs;
 		this.idx = (this.idx + steps) % frames.length;
 		this.write();
 	}

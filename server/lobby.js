@@ -36,7 +36,7 @@ export class Lobby {
 		return { ok: true, playerId: id };
 	}
 
-	// players still holding a seat; departed ones are kept only for the grace window
+	// active players (departed ones only kept for the grace window)
 	active() {
 		return [...this.players.values()].filter((p) => !p.departed);
 	}
@@ -44,7 +44,7 @@ export class Lobby {
 	leave(id) {
 		const player = this.players.get(id);
 		if (!player || player.departed) return;
-		// free the nickname immediately so a refresh can rejoin, keep the seat for graceMs
+		// nickname freed at once, seat kept for graceMs
 		player.departed = true;
 		setTimeout(() => {
 			this.players.delete(id);

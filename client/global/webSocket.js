@@ -1,7 +1,7 @@
 import { msg } from "/shared/global.js";
 
 // payload types a (re)mounting component may replay — everything else is fire-once
-const REPLAY = new Set([msg.lobby, msg.chatHistory, msg.start]);
+const replay = new Set([msg.lobby, msg.chatHistory, msg.start]);
 
 export class AppWebSocket {
 	constructor() {
@@ -39,7 +39,7 @@ export class AppWebSocket {
 				}
 				if (!data || typeof data.type !== "string") return;
 				if (data.type === msg.roundEnd) this.last.delete(msg.start);
-				else if (REPLAY.has(data.type)) this.last.set(data.type, data);
+				else if (replay.has(data.type)) this.last.set(data.type, data);
 				const set = this.handlers.get(data.type);
 				if (set) for (const fn of set) fn(data);
 			};
