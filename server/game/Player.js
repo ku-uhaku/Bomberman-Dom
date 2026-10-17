@@ -24,16 +24,13 @@ export class Player {
 		this.iFrames = 0;
 	}
 
-	get cell() {
+	getCell() {
 		return toIdx(Math.floor(this.x / tile), Math.floor(this.y / tile));
 	}
 
 	move(world, movement, dt) {
-		const length = Math.sqrt(movement.x * movement.x + movement.y * movement.y);
-		if (length === 0){
-			return;
-		}
-
+		const length = Math.hypot(movement.x, movement.y);
+		if (length === 0) return;
 		const secs = dt / 1000;
 		const vx = (movement.x / length) * this.speed * secs;
 		const vy = (movement.y / length) * this.speed * secs;
@@ -79,5 +76,4 @@ export class Player {
 		};
 	}
 }
-
 

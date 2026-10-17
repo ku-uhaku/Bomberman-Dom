@@ -33,7 +33,7 @@ Bomberman-Dom/
 │   ├── rooms.js         # Room creation & matchmaking (one lobby+chat+game per room)
 │   ├── chat.js          # Chat history + broadcast to room
 │   └── game/
-│       ├── game.js      # Game state machine: idle→queue→countdown→playing→over; 30Hz loop
+│       ├── game.js      # Server game loop and post-game pause
 │       ├── world.js     # Server simulation: movement, bombs, explosions, damage, powerups, win check
 │       ├── Player.js    # Player movement, powerups, lives
 │       ├── bomb.js      # Bomb fuse timer
@@ -43,7 +43,7 @@ Bomberman-Dom/
 │   ├── app.js           # App root, routing guards (/ vs /game)
 │   ├── pages/
 │   │   ├── lobby.js     # Nickname form, player counter, chat
-│   │   ├── game.js      # Game board, snapshot interpolation, input, HUD
+│   │   ├── game.js      # Game board, server-state rendering, input, HUD
 │   │   └── notFound.js
 │   ├── components/
 │   │   ├── chat.js      # Chat UI
@@ -68,24 +68,23 @@ Client (browser)  <--WebSocket JSON-->  server/server.js
                                 ┌───────────┴───────────┐
                                 ▼                       ▼
                            rooms.js                  static.js
-                           (matchmaking)              (file serving)
+                      (matchmaking/Room)              (file serving)
                                 |
-                      ┌─────────┴─────────┐
-                      ▼                   ▼
-                   lobby.js             chat.js
-                   (roster)              (chat history/broadcast)
-                      |
-                   game.js
-                   (state machine: idle→queue→countdown→playing→over)
-                      |
-                   world.js
-                   (30Hz simulation: movement, bombs, explosions, damage, powerups, win check)
+                ┌───────────────┼────────────────┐
+                ▼               ▼                ▼
+             lobby.js         chat.js          game.js
+          (room phases)       (messages)      (match loop)
+                                                   |
+                                                   ▼
+                                                world.js
+                                    (movement, bombs, damage, etc.)
 ```
 
-### Room container that owns the `Lobby`, `Chat`, and `Game`. When the lobby countdown ends, `startMatch()` begins the match; when the match ends, `finishMatch()` returns control to the lobby. No circular references — `Room` is the single mediator.
+### Room
+Container that owns the `Lobby`, `Chat`, and `Game`. The lobby state is the source of truth for the room phase (`idle` → `queue` → `countdown` → `playing`). When the countdown ends, `startMatch()` begins the match; when the game-over pause ends, `finishMatch()` returns the room to the lobby. The `Game` also tracks whether its current round is over.
 
 ### Lobby
-Owns the waiting-state machine (`idle` → `queue` → `countdown`). Validates nicknames (1–12 chars, unique, max 4 players), tracks active players, and broadcasts lobby state (player list, queue/countdown timers). Disconnected players are removed immediately. Fires `onCountdownEnd` when the match should begin.
+Validates nicknames (1–12 chars, unique, max 4 players), tracks players, and broadcasts lobby state (player list, queue/countdown timers). Two players start a 20-second queue; when it expires, or when the room fills, a 10-second countdown begins. The queue deadline does not restart when another player joins. Disconnected players are removed immediately.
 
 ### Chat
 Every chat message is broadcast by the server to all players in the room. History (last 50 messages) is replayed to a player when they join.
@@ -103,7 +102,7 @@ Owns players, bombs, explosions, blocks, and powerups. Each 30Hz tick:
 6. Checks win condition (≤1 alive → `game_over`)
 
 ### Client
-Connects via WebSocket, sends `input` (movement) and `bomb` requests. Receives state snapshots (~30Hz) and interpolates between buffered snapshots (`requestAnimationFrame` render loop) for smooth movement. Renders the fixed 15×13 map as DOM cells (no canvas). Chat and HUD update live from server messages.
+Connects via WebSocket and sends movement directions and bomb requests. Receives authoritative state snapshots (~30Hz) and applies player positions when each snapshot arrives. The browser's `requestAnimationFrame` loop updates the FPS display and sprite animations; it does not simulate movement or interpolate player positions. The fixed 15×13 map is rendered as DOM cells (no canvas). Chat and HUD update from server messages.
 
 ## Game Mechanics
 
@@ -132,12 +131,16 @@ Connects via WebSocket, sends `input` (movement) and `bomb` requests. Receives s
 | `game_over` | server→client | Winner declared |
 | `round_end` | server→client | Round over, back to lobby |
 
+The WebSocket endpoint requires a same-host `Origin`, caps messages at 4 KB and
+active connections at 128, and closes clients that exceed 120 messages per
+second. Chat is limited to 5 messages per second per connection.
+
 ## Performance
 
 - `requestAnimationFrame` client render loop (60fps target)
 - 30Hz fixed-tick server simulation (`tickMs`)
 - Throttled DOM writes — `textContent` only changes when text actually changes
-- Snapshot interpolation — client buffers server states and interpolates player positions between them
+- Player positions and game objects update from authoritative server snapshots
 - No canvas / WebGL; DOM-based rendering keeps paint and layer count minimal
 
 ## Tests
@@ -145,4 +148,3 @@ Connects via WebSocket, sends `input` (movement) and `bomb` requests. Receives s
 ```bash
 # Unit tests live in .tests/ (chat, game, lobby, rooms, static, world)
 ```
-

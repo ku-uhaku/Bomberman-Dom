@@ -73,7 +73,7 @@ export class World {
 		const player = this.players.get(id);
 		if (!player || player.lives <= 0) return;
 
-		const idx = player.cell;
+		const idx = player.getCell();
 		if (this.bombs.has(idx)) return;
 
 		let active = 0;
@@ -130,11 +130,11 @@ export class World {
 	}
 
 	pickup(player, events) {
-		const type = this.powerups.get(player.cell);
+		const type = this.powerups.get(player.getCell());
 		if (!type) return;
 
 		player.applyPowerup(type);
-		this.powerups.delete(player.cell);
+		this.powerups.delete(player.getCell());
 		events.push({ type: event_names.powerupPicked, playerId: player.id, powerup: type });
 	}
 

@@ -1,4 +1,4 @@
-import { el, Component, createApp, Router, navigate, currentPath } from "./framework/index.js";
+import { el, Component, createApp, Router, navigate } from "./framework/index.js";
 import { AppWebSocket } from "./global/webSocket.js";
 import { LobbyPage } from "./pages/lobby.js";
 import { GamePage } from "./pages/game.js";
@@ -25,29 +25,12 @@ class App extends Component {
 			this.state.inGame = false;
 			navigate("/");
 		});
-		if (window.location.pathname === "/" && !this.valid(currentPath())) navigate("/");
 	}
 
 	valid(path) {
 		if (path === "/") return true;
 		if (path === "/game") return this.state.playerId !== null && this.state.inGame;
 		return false;
-	}
-
-	attach() {
-		this.onHashChange = () => {
-			if (window.location.pathname !== "/"){
-				return;
-			}
-			if (!this.valid(currentPath())){
-				navigate("/");
-			}
-		};
-		window.addEventListener("hashchange", this.onHashChange);
-	}
-
-	detach() {
-		window.removeEventListener("hashchange", this.onHashChange);
 	}
 
 	render() {
