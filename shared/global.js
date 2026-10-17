@@ -29,29 +29,29 @@ export const chatHistory = 50;
 export const chatFade = 5;
 
 export const msg = {
-  // server to client
-  joined: "joined",
-  error: "error",
-  lobby: "lobby",
-  chatHistory: "chat_history",
-  chatMsg: "chat",
-  start: "start",
-  state: "state",
-  gameOver: "game_over",
-  roundEnd: "round_end",
-  
-  // client to server
-  join: "join",
-  chat: "chat",
-  input: "input",
-  bomb: "bomb",
+	// server to client
+	joined: "joined",
+	error: "error",
+	lobby: "lobby",
+	chatHistory: "chat_history",
+	chatMsg: "chat",
+	start: "start",
+	state: "state",
+	gameOver: "game_over",
+	roundEnd: "round_end",
+
+	// client to server
+	join: "join",
+	chat: "chat",
+	input: "input",
+	bomb: "bomb",
 };
 
 export const event_names = {
-  bomb: "bomb",
-  explode: "explode",
-  powerupPicked: "powerup_picked",
-  hit: "hit",
-  died: "died",
-  gameOver: "game_over",
+	bomb: "bomb",
+	explode: "explode",
+	powerupPicked: "powerup_picked",
+	hit: "hit",
+	died: "died",
+	gameOver: "game_over",
 };

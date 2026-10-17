@@ -9,7 +9,7 @@ export class Lobby {
 		this.onCountdownEnd = null;
 		this.onPlayerLeft = null;
 
-		this.gameState = "idle"; // idle | queue | countdown
+		this.gameState = "idle"; // idle | queue | countdown | playing
 		this.queueEndsAt = null;
 		this.countdownEndsAt = null;
 		this.intervalId = null; // deadline checker setInterval
@@ -34,7 +34,7 @@ export class Lobby {
 		const id = this.nextPlayerId++;
 		this.players.set(id, { id, nickname: name, socket });
 		socket.on("close", () => this.leave(id));
-		this.evaluate();
+		this.updateLobbyState();
 		this.sendLobby();
 		return { ok: true, playerId: id };
 	}
@@ -44,10 +44,7 @@ export class Lobby {
 	}
 
 	acceptingPlayers() {
-		if (this.gameState !== "idle" && this.gameState !== "queue" && this.gameState !== "countdown") {
-			return false;
-		}
-		return this.active().length < maxPlayers;
+		return this.gameState !== "playing" && this.players.size < maxPlayers;
 	}
 
 	snapshot() {
@@ -63,7 +60,7 @@ export class Lobby {
 			return;
 		}
 		this.players.delete(id);
-		this.evaluate();
+		this.updateLobbyState();
 		this.sendLobby();
 		if (this.onEmpty) {
 			this.onEmpty();
@@ -73,8 +70,10 @@ export class Lobby {
 		}
 	}
 
-	evaluate() {
-		const n = this.active().length;
+	updateLobbyState() {
+		if (this.gameState === "playing") return;
+
+		const n = this.players.size;
 		if (n >= maxPlayers) {
 			this.startCountdown();
 			return;
@@ -83,6 +82,8 @@ export class Lobby {
 			this.reset();
 			return;
 		}
+
+		if (this.gameState === "queue") return;
 
 		// start queue
 		this.gameState = "queue";
@@ -129,9 +130,10 @@ export class Lobby {
 			this.sendLobby();
 		}
 		else if (this.gameState === "countdown" && now >= this.countdownEndsAt) {
-			if (this.onCountdownEnd) {
-				this.onCountdownEnd();
-			}
+			this.gameState = "playing";
+			this.countdownEndsAt = null;
+			this.stop();
+			this.onCountdownEnd?.();
 		}
 	}
 
@@ -145,6 +147,8 @@ export class Lobby {
 	}
 
 	sendAll(obj) {
-		for (const p of this.active()) this.send(p.socket, obj);
+		for (const p of this.active()){
+			this.send(p.socket, obj);
+		}
 	}
 }

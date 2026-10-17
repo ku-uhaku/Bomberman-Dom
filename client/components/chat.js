@@ -59,7 +59,11 @@ export class Chat extends Component {
 					const text = this.state.value.trim();
 					if (!text) return;
 					this.state.error = "";
-					if (this.props.ws.sendMessage({ type: msg.chat, text })) this.state.value = "";
+					if (this.props.ws.sendMessage({ type: msg.chat, text })) {
+						this.state.value = "";
+					} else {
+						this.state.error = "not connected";
+					}
 				},
 			}, [
 				el("input", {

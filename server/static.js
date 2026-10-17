@@ -18,6 +18,11 @@ export async function serveStatic(res, urlPath) {
   const target = path.resolve(root, "." + urlPath);
   if (target !== root && !target.startsWith(root + path.sep)) return false;
 
+  const relative = path.relative(root, target);
+  if (!relative.startsWith(`client${path.sep}`) && !relative.startsWith(`shared${path.sep}`)) {
+    return false;
+  }
+
   try {
     const data = await readFile(target);
     res.writeHead(200, {
@@ -26,7 +31,7 @@ export async function serveStatic(res, urlPath) {
     });
     res.end(data);
     return true;
-  } catch {
+  } catch (error) {
     return false;
   }
 }
