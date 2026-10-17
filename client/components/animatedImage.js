@@ -58,7 +58,7 @@ export class AnimatedImage extends Component {
 		this.syncFlip();
 
 		if (frames !== this.lastFrames) {
-			// parent swapped the frame set (e.g. a bomb cell became an explosion)
+			// frames changed (bomb became an explosion...)
 			this.lastFrames = frames;
 			this.time = 0;
 			this.idx = 0;

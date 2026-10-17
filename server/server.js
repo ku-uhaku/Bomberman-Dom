@@ -38,8 +38,9 @@ function onMessage(socket, raw) {
 	} catch {
 		return sendError(socket, "invalid json");
 	}
-	if (typeof data !== "object" || data === null || typeof data.type !== "string")
+	if (typeof data !== "object" || data === null || typeof data.type !== "string"){
 		return sendError(socket, "invalid message");
+	}
 
 	switch (data.type) {
 		case msg.join: {
@@ -77,7 +78,10 @@ function onMessage(socket, raw) {
 					return sendError(socket, result.reason);
 				return;
 			}
-			if (room.game.gameState !== "playing") return;
+
+			if (room.phase !== "playing") {
+				return;
+			}
 			if (data.type === msg.input) {
 				if (typeof data.x !== "number" || typeof data.y !== "number")
 					return sendError(socket, "input x,y must be numbers");

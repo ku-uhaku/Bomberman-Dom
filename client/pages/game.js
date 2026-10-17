@@ -4,8 +4,8 @@ import { AnimatedImage } from "../components/animatedImage.js";
 import { cols, rows, tile, msg, event_names } from "/shared/global.js";
 import { playSound } from "../global/sound.js";
 import { PlayerStats } from "../components/playerStats.js";
-
 import { toCol, toRow } from "/shared/util.js";
+
 const atlas = "/client/assets/images/art.png";
 const characters = [0, 1, 2, 3].map((idx) => [
 	[0, 96 + 32 * idx],
@@ -233,7 +233,9 @@ export class GamePage extends Component {
 		return `cell wall-${start.map.wallVariants[idx]}`;
 	}
 
-	blockVariant(idx) { return (toCol(idx) + toRow(idx)) % 3; }
+	blockVariant(idx) { 
+		return (toCol(idx) + toRow(idx)) % 3;
+	}
 
 	// cell objects, re-evaluated per snapshot
 	objClass(idx, start) {

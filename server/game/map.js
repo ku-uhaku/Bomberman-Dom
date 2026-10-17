@@ -51,7 +51,7 @@ function parseMap() {
     throw new Error(`map: expected ${rows} rows, got ${mapTemplate.length}`);
 
   const walls = new Set();
-  const wallVariants = {}; // idx -> sprite variant (1-5)
+  const wallVariants = {}; // idx -> sprite variant (1-6)
   const open = [];
   mapTemplate.forEach((line, row) => {
     if (line.length !== cols){
@@ -63,7 +63,9 @@ function parseMap() {
       if (char >= "1" && char <= "6") {
         walls.add(idx);
         wallVariants[idx] = Number(char);
-      } else if (char === ".") open.push(idx);
+      } else if (char === ".") {
+        open.push(idx);
+      }
       else throw new Error(`map: unknown char "${char}" at ${col},${row}`);
     });
   });

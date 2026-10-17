@@ -82,24 +82,16 @@ Client (browser)  <--WebSocket JSON-->  server/server.js
                    (30Hz simulation: movement, bombs, explosions, damage, powerups, win check)
 ```
 
-### Room
-One `Lobby` + one `Chat` + one `Game` per room. `findOrCreateRoom` puts new joiners into the first room still gathering players (`idle`, `queue`, or `countdown`); otherwise it creates a new room.
+### Room container that owns the `Lobby`, `Chat`, and `Game`. When the lobby countdown ends, `startMatch()` begins the match; when the match ends, `finishMatch()` returns control to the lobby. No circular references — `Room` is the single mediator.
 
 ### Lobby
-Validates nicknames (1–12 chars, unique, max 4 players). Tracks active players and broadcasts lobby state (player list, queue/countdown timers) to everyone in the room. Disconnected players are removed immediately.
+Owns the waiting-state machine (`idle` → `queue` → `countdown`). Validates nicknames (1–12 chars, unique, max 4 players), tracks active players, and broadcasts lobby state (player list, queue/countdown timers). Disconnected players are removed immediately. Fires `onCountdownEnd` when the match should begin.
 
 ### Chat
 Every chat message is broadcast by the server to all players in the room. History (last 50 messages) is replayed to a player when they join.
 
-### Game (state machine)
-Server-authoritative. States:
-- `idle` — waiting for players
-- `queue` — 2+ players present, waiting for the queue window to close
-- `countdown` — 10-second "get ready" before the match
-- `playing` — match in progress; 30Hz simulation loop
-- `over` — one player left; round-end timer then back to lobby
-
-When `countdown` finishes, `beginGame()` spawns a `World` and sends the initial map + spawn positions to all clients.
+### Game
+Server-authoritative match loop. `beginGame(players, sendAll)` spawns a `World` and sends the initial map + spawn positions to all clients. Runs a 30Hz fixed-tick loop (`loopTick`) that advances the simulation and broadcasts state snapshots. When only one player remains, it fires `gameOver` → waits `roundEndMs` → calls `onEnd()` to hand control back to the `Room`.
 
 ### World (server simulation)
 Owns players, bombs, explosions, blocks, and powerups. Each 30Hz tick:
