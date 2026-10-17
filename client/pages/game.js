@@ -1,7 +1,7 @@
 import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
-import { cols, rows, tile, tickMs, msg, event_names } from "/shared/global.js";
+import { cols, rows, tile, msg, event_names } from "/shared/global.js";
 import { playSound } from "../global/sound.js";
 import { PlayerStats } from "../components/playerStats.js";
 
@@ -34,34 +34,52 @@ export class GamePage extends Component {
 		this.scale = 1;
 		this.players = new Map(); // playerId -> node
 		this.flips = new Map(); // playerId -> facing left
-		this.buffer = []; // { t, players } snapshots, oldest first
+		this.playerPosHistory = []; // { t, players } snapshots
 		this.held = new Set(); // pressed movement key codes
-		this.sent = { x: 0, y: 0 }; // last movement sent
+		this.lastMoveDirection = { x: 0, y: 0 };
 		this.fpsNode = null;
 		this.frames = 0;
 		this.fpsAcc = 0;
-		this.cache = null; // snapshots
+		this.previousGameState = null;
 	}
 
 	attach() {
 		this.onResize = () => this.fit();
 		this.onKey = (e) => this.key(e, e.type === "keydown");
+
 		window.addEventListener("resize", this.onResize);
 		window.addEventListener("keydown", this.onKey);
 		window.addEventListener("keyup", this.onKey);
+
 		const ws = this.props.ws;
 		this.offStart = ws.on(msg.start, (m) => this.reset(m));
 		this.offState = ws.on(msg.state, (m) => {
-			this.buffer.push({ t: performance.now(), players: m.snapshot.players });
+			this.playerPosHistory.push({ t: performance.now(), players: m.snapshot.players });
+			if (this.playerPosHistory.length > 2) {
+				this.playerPosHistory.shift();
+			}
+
+			// sounds
 			const me = String(this.props.playerId);
 			for (const e of m.events ?? []) {
-				if (e.type === event_names.bomb) playSound("bombPlaced");
-				else if (e.type === event_names.explode) playSound("explosion");
-				else if (e.type === event_names.hit && String(e.playerId) === me) playSound("damaged");
-				else if (e.type === event_names.died) playSound("dead");
-				else if (e.type === event_names.powerupPicked && String(e.playerId) === me) playSound("powerUp");
+				if (e.type === event_names.bomb) {
+					playSound("bombPlaced");
+				}
+				else if (e.type === event_names.explode) {
+					playSound("explosion");
+				}
+				else if (e.type === event_names.hit && String(e.playerId) === me) {
+					playSound("damaged");
+				}
+				else if (e.type === event_names.died) {
+					playSound("dead");
+				}
+				else if (e.type === event_names.powerupPicked && String(e.playerId) === me) {
+					playSound("powerUp");
+				}
 			}
-			this.cache = {
+
+			this.previousGameState = {
 				blocks: new Set(m.snapshot.blocks),
 				bombs: new Set(m.snapshot.bombs.map((b) => b.i)),
 				explosions: new Set(m.snapshot.explosions),
@@ -83,6 +101,7 @@ export class GamePage extends Component {
 		window.removeEventListener("resize", this.onResize);
 		window.removeEventListener("keydown", this.onKey);
 		window.removeEventListener("keyup", this.onKey);
+		
 		this.offStart();
 		this.offState();
 		this.offOver();
@@ -90,12 +109,12 @@ export class GamePage extends Component {
 	}
 
 	reset(start) {
-		this.buffer = [];
-		this.cache = null;
+		this.playerPosHistory = [];
+		this.previousGameState = null;
 		this.players.clear();
 		this.flips.clear();
 		this.held.clear();
-		this.sent = { x: 0, y: 0 };
+		this.lastMoveDirection = { x: 0, y: 0 };
 		this.fit();
 		this.state.start = start;
 		this.state.snap = null;
@@ -137,11 +156,11 @@ export class GamePage extends Component {
 		}
 		x = Math.sign(x);
 		y = Math.sign(y);
-		if (x === this.sent.x && y === this.sent.y){
+		if (x === this.lastMoveDirection.x && y === this.lastMoveDirection.y){
 			return;
 		}
 
-		this.sent = { x, y };
+		this.lastMoveDirection = { x, y };
 		this.props.ws.sendMessage({ type: msg.input, x, y });
 	}
 
@@ -156,41 +175,54 @@ export class GamePage extends Component {
 		for (const [id, node] of this.players) {
 			const p = this.state.snap?.players[id] ?? this.state.start?.players[id];
 			if (p){
-				this.place(node, p.x, p.y);
+				this.movePlayer(node, p.x, p.y);
 			}
 		}
 	}
 
-	// render two ticks in the past so there is always a snapshot pair to lerp between
 	tick(delta) {
 		// fps counter
 		this.frames++;
 		this.fpsAcc += delta;
 		if (this.fpsAcc >= 500) {
 			const text = `${Math.round((this.frames * 1000) / this.fpsAcc)} fps`;
-			if (this.fpsNode && this.fpsNode.textContent !== text) this.fpsNode.textContent = text;
+			if (this.fpsNode && this.fpsNode.textContent !== text) {
+				this.fpsNode.textContent = text;
+			}
 			this.frames = 0;
 			this.fpsAcc = 0;
 		}
 
-		const buf = this.buffer;
-		const at = performance.now() - 2 * tickMs;
-		while (buf.length > 2 && buf[1].t <= at) buf.shift();
-		const a = buf[0] ?? null;
-		const b = buf[1] ?? a;
-		if (a) {
-			// TODO: complexity
-			const k = b.t > a.t ? Math.min(1, Math.max(0, (at - a.t) / (b.t - a.t))) : 1;
-			for (const [id, node] of this.players) {
-				const from = a.players[id];
-				const to = b.players[id];
-				if (!from || !to) continue;
-				this.place(node, from.x + (to.x - from.x) * k, from.y + (to.y - from.y) * k);
-				const dx = to.x - from.x;
-				if (dx > 1) this.setFlip(id, node, false);
-				else if (dx < -1) this.setFlip(id, node, true);
-				if (node.classList.contains("dead") === to.lives <= 0) continue;
-				node.classList.toggle("dead", to.lives <= 0);
+		const history = this.playerPosHistory;
+		const older = history[0] ?? null;
+		const newer = history[1] ?? older;
+		if (!older) {
+			return;
+		}
+
+		for (const [id, node] of this.players) {
+			const from = older.players[id];
+			const to = newer.players[id];
+			
+			// move players, lerp between last 2 positions
+			this.movePlayer(node, to.x, to.y);
+
+			const dx = to.x - from.x;
+			if (dx > 1) {
+				this.setFlip(id, node, false);
+			}
+			else if (dx < -1) {
+				this.setFlip(id, node, true);
+			}
+
+			const dead = to.lives <= 0;
+			if (node.classList.contains("dead") !== dead) {
+				node.classList.toggle("dead", dead);
+			}
+
+			const flashing = !dead && to.iframes;
+			if (node.classList.contains("iframes") !== flashing) {
+				node.classList.toggle("iframes", flashing);
 			}
 		}
 	}
@@ -205,8 +237,11 @@ export class GamePage extends Component {
 
 	// cell objects, re-evaluated per snapshot
 	objClass(idx, start) {
-		const c = this.cache;
-		if (!c) return start.map.blocks.includes(idx) ? `block-${this.blockVariant(idx)}` : "";
+		const c = this.previousGameState;
+		if (!c){
+			return start.map.blocks.includes(idx) ? `block-${this.blockVariant(idx)}` : "";
+		}
+
 		if (c.explosions.has(idx)) return "explosion";
 		if (c.bombs.has(idx)) return "bomb";
 		const pu = c.powerups.get(idx);
@@ -237,7 +272,7 @@ export class GamePage extends Component {
 				key: id,
 				class: "player",
 				ref: (node) => {
-					if (!this.players.has(id)) this.place(node, p.x, p.y);
+					if (!this.players.has(id)) this.movePlayer(node, p.x, p.y);
 					this.players.set(id, node);
 				},
 			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[(Number(id) - 1) % characters.length], flip: this.flips.get(id) ?? false }))
@@ -267,7 +302,7 @@ export class GamePage extends Component {
 		return `${start.players[over.winnerId]?.nickname ?? "Player"} wins`;
 	}
 
-	place(node, x, y) {
+	movePlayer(node, x, y) {
 		const s = this.scale;
 		node.style.transform = `translate(${(x - tile / 2) * s}px, ${(y - tile / 2) * s}px) scale(${s})`;
 	}

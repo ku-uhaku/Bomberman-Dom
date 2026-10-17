@@ -28,21 +28,26 @@ export class Game {
 	}
 
 	evaluate() {
-		const n = this.lobby.active().length;
-		if (this.gameState === "countdown" || this.gameState === "playing" || this.gameState === "over") return;
-		if (n >= maxPlayers) this.startCountdown();
-		else if (n >= 2) {
-			if (this.gameState === "idle") {
-				// start queue
-				this.gameState = "queue";
-				this.countdownEndsAt = null;
-				this.queueEndsAt = Date.now() + queueMs;
-				this.stop();
-				this.intervalId = setInterval(() => this.checkDeadlines(), 250);
-			}
-		} else {
-			this.reset();
+		if (this.gameState === "countdown" || this.gameState === "playing" || this.gameState === "over"){
+			return;
 		}
+		
+		const n = this.lobby.active().length;
+		if (n >= maxPlayers) {
+			this.startCountdown();
+			return;
+		}
+		if (n < 2) {
+			this.reset();
+			return;
+		}
+		if (this.gameState !== "idle") return;
+		// start queue
+		this.gameState = "queue";
+		this.countdownEndsAt = null;
+		this.queueEndsAt = Date.now() + queueMs;
+		this.stop();
+		this.intervalId = setInterval(() => this.checkDeadlines(), 250);
 	}
 
 	startCountdown() {

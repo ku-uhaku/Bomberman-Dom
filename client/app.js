@@ -36,8 +36,12 @@ class App extends Component {
 
 	attach() {
 		this.onHashChange = () => {
-			if (window.location.pathname !== "/") return;
-			if (!this.valid(currentPath())) navigate("/");
+			if (window.location.pathname !== "/"){
+				return;
+			}
+			if (!this.valid(currentPath())){
+				navigate("/");
+			}
 		};
 		window.addEventListener("hashchange", this.onHashChange);
 	}

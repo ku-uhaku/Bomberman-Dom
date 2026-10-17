@@ -25,7 +25,6 @@ export class World {
 		this.explosions = new Map(); // idx -> ttl
 		this.powerups = new Map(); // idx -> type
 		this.players = new Map(); // id -> Player
-		this.seq = 0; // TODO: better name
 		this.over = false;
 
 		players.forEach((player, i) => {
@@ -91,7 +90,7 @@ export class World {
 
 		const baseCol = toCol(bomb.idx);
 		const baseRow = toRow(bomb.idx);
-		for (const [dc, dr] of [ // TODO: rename some vars here
+		for (const [dc, dr] of [
 			[1, 0],
 			[-1, 0],
 			[0, 1],
@@ -161,7 +160,10 @@ export class World {
 	}
 
 	checkWin(events) {
-		if (this.over) return;
+		if (this.over){
+			return;
+		}
+		
 		const alive = [...this.players.values()].filter((p) => p.lives > 0);
 		if (alive.length <= 1) {
 			this.over = true;
@@ -206,7 +208,6 @@ export class World {
 		for (const player of this.players.values())
 			players[player.id] = player.toJson();
 		return {
-			seq: this.seq++,
 			players,
 			blocks: [...this.blocks],
 			bombs: [...this.bombs].map(([idx, bomb]) => ({ i: idx, owner: bomb.owner })),

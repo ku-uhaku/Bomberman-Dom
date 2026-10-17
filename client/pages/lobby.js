@@ -6,7 +6,6 @@ import { playSound } from "../global/sound.js";
 
 const atlas = "/client/assets/images/art.png";
 
-// frame 1 of each player sprite, matching characters[0] / characters[1] in game.js
 const credits = [
 	{ name: "Mbarrah", frames: [[0, 128], [32, 128]] },
 	{ name: "Mbelhouss", frames: [[0, 96], [32, 96]] },
@@ -16,7 +15,6 @@ export class LobbyPage extends Component {
 	constructor(props) {
 		super(props, { lobby: null, nickname: "", error: "", busy: false });
 		this.labelNode = null;
-		this.acc = 0;
 		this.lastSec = null;
 	}
 
@@ -43,7 +41,10 @@ export class LobbyPage extends Component {
 	submit(e) {
 		e.preventDefault();
 		const name = this.state.nickname.trim();
-		if (this.state.busy || !name) return;
+		if (this.state.busy || !name){
+			return;
+		}
+		
 		this.state.error = "";
 		this.state.busy = true;
 		this.props.ws
@@ -78,14 +79,16 @@ export class LobbyPage extends Component {
 		return "waiting for players…";
 	}
 
-	// timer label is the only periodic DOM write — throttled, textContent only when it changes
 	tick(delta) {
-		this.acc += delta;
-		if (this.acc < 250) return;
-		this.acc = 0;
-		if (!this.labelNode) return;
+		if (!this.labelNode) {
+			return;
+		}
+
 		const text = this.label();
-		if (this.labelNode.textContent !== text) this.labelNode.textContent = text;
+		if (this.labelNode.textContent !== text) {
+			this.labelNode.textContent = text;
+		}
+
 		const sec = this.state.lobby?.countdownEndsAt
 			? Math.max(0, Math.ceil((this.state.lobby.countdownEndsAt - Date.now()) / 1000))
 			: null;
@@ -93,7 +96,9 @@ export class LobbyPage extends Component {
 			this.lastSec = sec;
 			playSound("timer");
 		}
-		if (sec === null) this.lastSec = null;
+		if (sec === null) {
+			this.lastSec = null;
+		}
 	}
 
 	credit(credit, key, flip) {

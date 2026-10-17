@@ -31,6 +31,7 @@
 
 .credit-label{
 	color: var(--muted);
+	font-weight: bold;
 }
 
 /* reserves the scaled box: transform doesn't affect layout (tile 32 × scale 5) */

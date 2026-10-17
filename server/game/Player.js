@@ -71,6 +71,7 @@ export class Player {
 			x: Math.round(this.x),
 			y: Math.round(this.y),
 			lives: this.lives,
+			iframes: this.iFrames > 0,
 			maxBombs: this.maxBombs,
 			range: this.range,
 			speed: this.speed,

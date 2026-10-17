@@ -9,7 +9,7 @@ export class AnimatedImage extends Component {
 		this.node = null; // ref to node
 		this.time = 0;
 		this.idx = 0; // frame index
-		this.applied = null; // last written background-position
+		this.applied = null; // last background-position
 		this.lastFrames = null;
 		this.lastFlip = null;
 	}

@@ -12,12 +12,16 @@ export class AppWebSocket {
 	}
 
 	connect() {
-		if (this.openPromise) return this.openPromise;
-		// get web socket url
+		if (this.openPromise) {
+			return this.openPromise;
+		}
+
+		// open websocket
 		const { protocol, host } = window.location;
 		const socketProtocol = protocol === "https:" ? "wss:" : "ws:";
 		const socket = new window.WebSocket(`${socketProtocol}//${host}`);
 		this.socket = socket;
+
 		this.openPromise = new Promise((resolve, reject) => {
 			socket.onopen = () => resolve();
 			socket.onerror = () => {
@@ -53,8 +57,6 @@ export class AppWebSocket {
 		return true;
 	}
 
-	// subscribe to a message type; returns an unsubscribe fn.
-	// cached payloads (lobby, chat_history) replay immediately on subscribe.
 	on(type, fn) {
 		let set = this.handlers.get(type);
 		if (!set) {
@@ -63,6 +65,8 @@ export class AppWebSocket {
 		}
 		set.add(fn);
 		if (this.last.has(type)) fn(this.last.get(type));
+
+		// return unsubscribe function
 		return () => set.delete(fn);
 	}
 }
