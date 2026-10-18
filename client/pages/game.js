@@ -2,7 +2,7 @@ import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { cols, rows, tile, tickMs, msg, event_names } from "/shared/global.js";
-import { playSound } from "../global/sound.js";
+import { playMusic, playSound, stopMusic } from "../global/sound.js";
 import { PlayerStats } from "../components/playerStats.js";
 import { toCol, toRow } from "/shared/util.js";
 
@@ -45,6 +45,7 @@ export class GamePage extends Component {
 	}
 
 	attach() {
+		playMusic("game");
 		this.onResize = () => this.fit();
 		this.onKey = (e) => this.key(e, e.type === "keydown");
 
@@ -99,6 +100,7 @@ export class GamePage extends Component {
 	}
 
 	detach() {
+		stopMusic("game");
 		window.removeEventListener("resize", this.onResize);
 		window.removeEventListener("keydown", this.onKey);
 		window.removeEventListener("keyup", this.onKey);

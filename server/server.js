@@ -107,7 +107,6 @@ const server = http.createServer(async (req, res) => {
 const wss = new WebSocketServer({
 	server,
 	maxPayload: 4096,
-	perMessageDeflate: false,
 	verifyClient: (info) => info.req.headers.origin === `http://${info.req.headers.host}`,
 });
 

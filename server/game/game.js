@@ -28,7 +28,7 @@ export class Game {
 		const now = Date.now();
 		this.loopAcc += now - this.loopLast;
 		this.loopLast = now;
-		if (this.loopAcc > 1000) this.loopAcc = 1000;
+		if (this.loopAcc > 1000) this.loopAcc = 1000; // background safety
 		while (this.loopAcc >= tickMs) {
 			this.loopAcc -= tickMs;
 

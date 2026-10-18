@@ -2,7 +2,7 @@ import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
 import { msg, maxPlayers, tile } from "/shared/global.js";
-import { playSound } from "../global/sound.js";
+import { playMusic, playSound, stopMusic } from "../global/sound.js";
 
 const atlas = "/client/assets/images/art.png";
 
@@ -19,6 +19,7 @@ export class LobbyPage extends Component {
 	}
 
 	attach() {
+		playMusic("lobby");
 		this.offLobby = this.props.ws.on(msg.lobby, (m) => {
 			this.state.lobby = m;
 		});
@@ -33,6 +34,7 @@ export class LobbyPage extends Component {
 	}
 
 	detach() {
+		stopMusic("lobby");
 		this.offLobby();
 		this.offJoined();
 		this.offError();
@@ -44,7 +46,8 @@ export class LobbyPage extends Component {
 		if (this.state.busy || !name){
 			return;
 		}
-		
+
+		playMusic("lobby");
 		this.state.error = "";
 		this.state.busy = true;
 		this.props.ws

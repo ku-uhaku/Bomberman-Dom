@@ -29,7 +29,7 @@ export class Player {
 	}
 
 	move(world, movement, dt) {
-		const length = Math.hypot(movement.x, movement.y);
+		const length = Math.sqrt(movement.x ** 2 + movement.y ** 2);
 		if (length === 0) return;
 		const secs = dt / 1000;
 		const vx = (movement.x / length) * this.speed * secs;
