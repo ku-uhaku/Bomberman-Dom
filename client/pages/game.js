@@ -30,15 +30,10 @@ const keys = { // suport arrows and WASD
 export class GamePage extends Component {
 	constructor(props) {
 		super(props, { start: null, snap: null, over: null });
-		this.root = null;
-		this.scale = 1;
 		this.players = new Map(); // playerId -> node
 		this.flips = new Map(); // playerId -> facing left
 		this.held = new Set(); // pressed movement key codes
 		this.lastMoveDirection = { x: 0, y: 0 };
-		this.fpsNode = null;
-		this.frames = 0;
-		this.fpsAcc = 0;
 		this.previousGameState = null;
 		this.playerSnapshots = [];
 		this.snapshotTime = 0;
@@ -46,10 +41,8 @@ export class GamePage extends Component {
 
 	attach() {
 		playMusic("game");
-		this.onResize = () => this.fit();
 		this.onKey = (e) => this.key(e, e.type === "keydown");
 
-		window.addEventListener("resize", this.onResize);
 		window.addEventListener("keydown", this.onKey);
 		window.addEventListener("keyup", this.onKey);
 
@@ -84,7 +77,7 @@ export class GamePage extends Component {
 			};
 			this.playerSnapshots.push(m.snapshot.players);
 			if (this.playerSnapshots.length > 2) this.playerSnapshots.shift();
-			this.snapshotTime = performance.now();
+			this.snapshotTime = Date.now();
 			this.state.snap = m.snapshot;
 			this.updatePlayers(m.snapshot.players, this.playerSnapshots[0]);
 		});
@@ -101,7 +94,6 @@ export class GamePage extends Component {
 
 	detach() {
 		stopMusic("game");
-		window.removeEventListener("resize", this.onResize);
 		window.removeEventListener("keydown", this.onKey);
 		window.removeEventListener("keyup", this.onKey);
 		
@@ -117,12 +109,11 @@ export class GamePage extends Component {
 		this.flips.clear();
 		this.held.clear();
 		this.lastMoveDirection = { x: 0, y: 0 };
-		this.fit();
 		this.state.start = start;
 		this.state.snap = null;
 		this.state.over = null;
 		this.playerSnapshots = [start.players];
-		this.snapshotTime = performance.now();
+		this.snapshotTime = Date.now();
 	}
 
 	key(e, down) {
@@ -168,26 +159,9 @@ export class GamePage extends Component {
 		this.props.ws.sendMessage({ type: msg.input, x, y });
 	}
 
-	fit() {
-		const size = Math.max(8, Math.floor(Math.min(window.innerWidth / cols, (window.innerHeight - 160) / rows)));
-		if (this.root) {
-			this.root.style.setProperty("--tile", `${size}px`);
-			this.root.style.setProperty("--obj-scale", String(size / tile));
-			this.root.style.setProperty("--ui", String(size / tile));
-		}
-		this.scale = size / tile;
-		const latestPlayers = this.playerSnapshots[this.playerSnapshots.length - 1];
-		for (const [id, node] of this.players) {
-			const player = latestPlayers ? latestPlayers[id] : null;
-			if (player) {
-				this.movePlayer(node, player.x, player.y);
-			}
-		}
-	}
-
 	tick(delta) {
 		// lerp player pos
-		const progress = Math.min((performance.now() - this.snapshotTime) / tickMs, 1);
+		const progress = Math.min((Date.now() - this.snapshotTime) / tickMs, 1);
 		if (this.playerSnapshots.length === 2) {
 			const previousPlayers = this.playerSnapshots[0];
 			const currentPlayers = this.playerSnapshots[1];
@@ -200,17 +174,6 @@ export class GamePage extends Component {
 			}
 		}
 
-		// fps counter
-		this.frames++;
-		this.fpsAcc += delta;
-		if (this.fpsAcc >= 500) {
-			const text = `${Math.round((this.frames * 1000) / this.fpsAcc)} fps`;
-			if (this.fpsNode && this.fpsNode.textContent !== text) {
-				this.fpsNode.textContent = text;
-			}
-			this.frames = 0;
-			this.fpsAcc = 0;
-		}
 	}
 
 	updatePlayers(players, previousPlayers) {
@@ -218,16 +181,19 @@ export class GamePage extends Component {
 			const player = players[id];
 			if (!player) continue;
 
+			// flip
 			const previous = previousPlayers[id];
 			const dx = player.x - previous.x;
 			if (dx > 1) this.setFlip(id, node, false);
 			else if (dx < -1) this.setFlip(id, node, true);
 
+			// dead
 			const dead = player.lives <= 0;
 			if (node.classList.contains("dead") !== dead) {
 				node.classList.toggle("dead", dead);
 			}
 
+			// damage
 			const flashing = !dead && player.iframes;
 			if (node.classList.contains("iframes") !== flashing) {
 				node.classList.toggle("iframes", flashing);
@@ -261,8 +227,7 @@ export class GamePage extends Component {
 
 	render() {
 		const { start, snap, over } = this.state;
-		const root = (children) =>
-			el("div", { class: "game", ref: (node) => { this.root = node; this.fit(); } }, children);
+		const root = (children) => el("div", { class: "game" }, children);
 		if (!start) return root([]);
 
 		// convert cells into html
@@ -294,16 +259,17 @@ export class GamePage extends Component {
 		const me = snap?.players[this.props.playerId];
 		const out = me?.lives === 0;
 		return root([
-			el("div", { class: "hud" }, Object.entries(roster).map(([id, p]) =>
-				el(PlayerStats, { key: id, player: p, playerId: this.props.playerId })
-			)),
-			el("div", { class: "fps", ref: (n) => (this.fpsNode = n) }),
-			el(Chat, { ws: this.props.ws }),
-			el("div", { class: "board" }, [
-				...cells,
-				...players,
-				out && !over ? el("div", { class: "overlay" }, "You are out") : null,
-				over ? el("div", { class: "overlay" }, this.winnerText(over, start)) : null,
+			el("div", { class: "game-content" }, [
+				el("div", { class: "hud" }, Object.entries(roster).map(([id, p]) =>
+					el(PlayerStats, { key: id, player: p, playerId: this.props.playerId })
+				)),
+				el(Chat, { ws: this.props.ws }),
+				el("div", { class: "board" }, [
+					...cells,
+					...players,
+					out && !over ? el("div", { class: "overlay" }, "You are out") : null,
+					over ? el("div", { class: "overlay" }, this.winnerText(over, start)) : null,
+				]),
 			]),
 		]);
 	}
@@ -315,8 +281,7 @@ export class GamePage extends Component {
 	}
 
 	movePlayer(node, x, y) {
-		const s = this.scale;
-		node.style.transform = `translate(${(x - tile / 2) * s}px, ${(y - tile / 2) * s}px) scale(${s})`;
+		node.style.transform = `translate(${x - tile / 2}px, ${y - tile / 2}px)`;
 	}
 
 	setFlip(id, node, flip) {

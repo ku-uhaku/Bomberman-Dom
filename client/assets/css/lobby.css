@@ -1,3 +1,7 @@
+.lobby-page {
+	zoom: min(1, calc(100vw / 700px), calc(100dvh / 700px));
+}
+
 .title {
 	width: 700px;
 	height: auto;
@@ -57,10 +61,21 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 12px;
+	position: relative;
 }
 
 .lobby-panel form {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+}
+
+.lobby-panel::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: var(--bg);
+	opacity: 0.01;
+	animation: idlePulse 1s linear infinite;
+	pointer-events: none;
 }

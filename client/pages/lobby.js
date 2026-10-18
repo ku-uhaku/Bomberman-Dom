@@ -141,7 +141,7 @@ export class LobbyPage extends Component {
 				error ? el("p", { class: "error" }, error) : null,
 			];
 
-		return el("main", {}, [
+		return el("main", { class: "lobby-page" }, [
 			el("img", { class: "title", src: "/client/assets/images/title.png", alt: "Bomberman" }),
 			el("div", { class: "credits" }, [
 				this.credit(credits[0], "left"),
