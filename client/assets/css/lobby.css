@@ -57,10 +57,21 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 12px;
+	position: relative;
 }
 
 .lobby-panel form {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+}
+
+.lobby-panel::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: var(--bg);
+	opacity: 0.01;
+	animation: idlePulse 1s linear infinite;
+	pointer-events: none;
 }

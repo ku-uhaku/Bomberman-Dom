@@ -36,9 +36,6 @@ export class GamePage extends Component {
 		this.flips = new Map(); // playerId -> facing left
 		this.held = new Set(); // pressed movement key codes
 		this.lastMoveDirection = { x: 0, y: 0 };
-		this.fpsNode = null;
-		this.frames = 0;
-		this.fpsAcc = 0;
 		this.previousGameState = null;
 		this.playerSnapshots = [];
 		this.snapshotTime = 0;
@@ -198,17 +195,6 @@ export class GamePage extends Component {
 			}
 		}
 
-		// fps counter
-		this.frames++;
-		this.fpsAcc += delta;
-		if (this.fpsAcc >= 500) {
-			const text = `${Math.round((this.frames * 1000) / this.fpsAcc)} fps`;
-			if (this.fpsNode && this.fpsNode.textContent !== text) {
-				this.fpsNode.textContent = text;
-			}
-			this.frames = 0;
-			this.fpsAcc = 0;
-		}
 	}
 
 	updatePlayers(players, previousPlayers) {
@@ -295,7 +281,6 @@ export class GamePage extends Component {
 			el("div", { class: "hud" }, Object.entries(roster).map(([id, p]) =>
 				el(PlayerStats, { key: id, player: p, playerId: this.props.playerId })
 			)),
-			el("div", { class: "fps", ref: (n) => (this.fpsNode = n) }),
 			el(Chat, { ws: this.props.ws }),
 			el("div", { class: "board" }, [
 				...cells,
