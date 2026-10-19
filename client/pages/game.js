@@ -1,7 +1,7 @@
 import { el, Component } from "../framework/index.js";
 import { Chat } from "../components/chat.js";
 import { AnimatedImage } from "../components/animatedImage.js";
-import { cols, rows, tile, tickMs, msg, event_names } from "/shared/global.js";
+import { cols, rows, tile, msg, event_names } from "/shared/global.js";
 import { playMusic, playSound, stopMusic } from "../global/sound.js";
 import { PlayerStats } from "../components/playerStats.js";
 import { toCol, toRow } from "/shared/util.js";
@@ -35,8 +35,10 @@ export class GamePage extends Component {
 		this.held = new Set(); // pressed movement key codes
 		this.lastMoveDirection = { x: 0, y: 0 };
 		this.previousGameState = null;
-		this.playerSnapshots = [];
-		this.snapshotTime = 0;
+		this.previousSnapshot = null;
+		this.rootNode = null;
+		this.frameColor = false;
+		
 	}
 
 	attach() {
@@ -75,11 +77,11 @@ export class GamePage extends Component {
 				explosions: new Set(m.snapshot.explosions),
 				powerups: new Map(m.snapshot.powerups),
 			};
-			this.playerSnapshots.push(m.snapshot.players);
-			if (this.playerSnapshots.length > 2) this.playerSnapshots.shift();
-			this.snapshotTime = Date.now();
+			
+			
 			this.state.snap = m.snapshot;
-			this.updatePlayers(m.snapshot.players, this.playerSnapshots[0]);
+			this.updatePlayers(m.snapshot.players, this.previousSnapshot);
+		this.previousSnapshot = m.snapshot.players;
 		});
 		this.offOver = ws.on(msg.gameOver, (m) => {
 			this.state.over = m;
@@ -88,7 +90,7 @@ export class GamePage extends Component {
 			this.state.start = null;
 			this.state.snap = null;
 			this.state.over = null;
-			this.playerSnapshots = [];
+			this.previousSnapshot = null;
 		});
 	}
 
@@ -112,8 +114,7 @@ export class GamePage extends Component {
 		this.state.start = start;
 		this.state.snap = null;
 		this.state.over = null;
-		this.playerSnapshots = [start.players];
-		this.snapshotTime = Date.now();
+		this.previousSnapshot = start.players;
 	}
 
 	key(e, down) {
@@ -160,20 +161,16 @@ export class GamePage extends Component {
 	}
 
 	tick(delta) {
-		// lerp player pos
-		const progress = Math.min((Date.now() - this.snapshotTime) / tickMs, 1);
-		if (this.playerSnapshots.length === 2) {
-			const previousPlayers = this.playerSnapshots[0];
-			const currentPlayers = this.playerSnapshots[1];
-			for (const [id, node] of this.players) {
-				const previous = previousPlayers[id];
-				const current = currentPlayers[id];
-				const x = previous.x + (current.x - previous.x) * progress;
-				const y = previous.y + (current.y - previous.y) * progress;
-				this.movePlayer(node, x, y);
-			}
-		}
+		this.frameColor = !this.frameColor;
+		this.rootNode?.style.setProperty("--frame-color", this.frameColor ? "#fff" : "#000");
 
+		const snap = this.state.snap;
+		if (!snap) return;
+		const players = snap.players;
+		for (const [id, node] of this.players) {
+			const player = players[id];
+			if (player) this.movePlayer(node, player.x, player.y);
+		}
 	}
 
 	updatePlayers(players, previousPlayers) {
@@ -227,7 +224,10 @@ export class GamePage extends Component {
 
 	render() {
 		const { start, snap, over } = this.state;
-		const root = (children) => el("div", { class: "game" }, children);
+		const root = (children) => el("div", {
+			class: "game",
+			ref: (node) => { this.rootNode = node; },
+		}, children);
 		if (!start) return root([]);
 
 		// convert cells into html
@@ -248,8 +248,8 @@ export class GamePage extends Component {
 				class: "player",
 				ref: (node) => {
 					this.players.set(id, node);
-					const latestPlayers = this.playerSnapshots[this.playerSnapshots.length - 1];
-					const position = latestPlayers ? latestPlayers[id] : p;
+					
+					const position = this.previousSnapshot ? this.previousSnapshot[id] : p;
 					this.movePlayer(node, position.x, position.y);
 				},
 			}, el(AnimatedImage, { atlas, cellW: tile, cellH: tile, frames: characters[(Number(id) - 1) % characters.length], flip: this.flips.get(id) ?? false }))

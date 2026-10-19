@@ -16,6 +16,8 @@ export class LobbyPage extends Component {
 		super(props, { lobby: null, nickname: "", error: "", busy: false });
 		this.labelNode = null;
 		this.lastSec = null;
+		this.rootNode = null;
+		this.frameColor = false;
 	}
 
 	attach() {
@@ -83,6 +85,9 @@ export class LobbyPage extends Component {
 	}
 
 	tick(delta) {
+		this.frameColor = !this.frameColor;
+		this.rootNode?.style.setProperty("--frame-color", this.frameColor ? "#fff" : "#000");
+
 		if (!this.labelNode) {
 			return;
 		}
@@ -141,7 +146,10 @@ export class LobbyPage extends Component {
 				error ? el("p", { class: "error" }, error) : null,
 			];
 
-		return el("main", { class: "lobby-page" }, [
+		return el("main", {
+			class: "lobby-page",
+			ref: (node) => { this.rootNode = node; },
+		}, [
 			el("img", { class: "title", src: "/client/assets/images/title.png", alt: "Bomberman" }),
 			el("div", { class: "credits" }, [
 				this.credit(credits[0], "left"),

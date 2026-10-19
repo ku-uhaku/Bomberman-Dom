@@ -55,18 +55,19 @@ export class Chat extends Component {
 
 	render() {
 		const { messages, error } = this.state;
-		// single .chat wrapper: messages keyed m0..mn, input/button/error
-		// carry fixed keys so the diff never recreates the focused input.
 		return el("div", {
 			class: "chat",
-			ref: (n) => {
-				this.listNode = n;
-				this.scroll();
-			},
 		}, [
-			...messages.map((m, i) =>
+			el("div", {
+				class: "chat-messages",
+				key: "messages",
+				ref: (n) => {
+					this.listNode = n;
+					this.scroll();
+				},
+			}, messages.map((m, i) =>
 				el("p", { key: `m${i}` }, `${m.nickname}: ${m.text}`)
-			),
+			)),
 			error ? el("p", { key: "err", class: "error" }, error) : null,
 			el("input", {
 				key: "field",

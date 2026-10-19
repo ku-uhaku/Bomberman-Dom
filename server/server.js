@@ -5,9 +5,12 @@ import { chatMax, msg } from "../shared/global.js";
 import { findOrCreateRoom } from "./rooms.js";
 
 const PORT = 3000;
+const maxConnections = 32;
+const maxMessagesPerSecond = 256;
 
 const rooms = new Set();
 const socketRoom = new WeakMap(); // socket -> room
+const messageTimes = new WeakMap();
 
 // socket helpers
 function send(socket, obj) {
@@ -107,11 +110,23 @@ const server = http.createServer(async (req, res) => {
 const wss = new WebSocketServer({
 	server,
 	maxPayload: 4096,
-	verifyClient: (info) => info.req.headers.origin === `http://${info.req.headers.host}`,
+	verifyClient: (info) =>
+		wss.clients.size < maxConnections &&
+		info.req.headers.origin === `http://${info.req.headers.host}`,
 });
 
 wss.on("connection", (socket) => {
+	messageTimes.set(socket, []);
 	socket.on("message", (raw) => {
+		const now = Date.now();
+		const times = messageTimes.get(socket).filter((time) => now - time < 1000);
+		if (times.length >= maxMessagesPerSecond) {
+			socket.close(1008, "message rate limit exceeded");
+			return;
+		}
+		times.push(now);
+		messageTimes.set(socket, times);
+
 		try {
 			onMessage(socket, raw.toString());
 		} catch {

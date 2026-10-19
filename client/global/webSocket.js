@@ -1,4 +1,4 @@
-import { msg } from "../../shared/global.js";
+import { msg, chatHistory } from "../../shared/global.js";
 
 const replay = new Set([msg.lobby, msg.chatHistory, msg.start]);
 
@@ -8,6 +8,7 @@ export class AppWebSocket {
 		this.openPromise = null;
 		this.handlers = new Map(); // type -> Set<fn>
 		this.last = new Map(); // type -> last payload
+		this.chatMessages = [];
 	}
 
 	connect() {
@@ -54,8 +55,23 @@ export class AppWebSocket {
 					return;
 				}
 				if (!data || typeof data.type !== "string") return;
-				if (data.type === msg.roundEnd) this.last.delete(msg.start);
-				else if (replay.has(data.type)) this.last.set(data.type, data);
+				if (data.type === msg.roundEnd) {
+					this.last.delete(msg.start);
+					this.last.delete(msg.chatHistory);
+					this.chatMessages = [];
+				} else if (data.type === msg.start) {
+					this.last.delete(msg.chatHistory);
+					this.last.set(data.type, data);
+					this.chatMessages = [];
+				} else if (data.type === msg.chatHistory) {
+					this.last.set(data.type, data);
+					this.chatMessages = [];
+				} else if (data.type === msg.chatMsg) {
+					this.chatMessages.push(data);
+					if (this.chatMessages.length > chatHistory) this.chatMessages.shift();
+				} else if (replay.has(data.type)) {
+					this.last.set(data.type, data);
+				}
 				this.dispatch(data);
 			};
 			socket.onopen = () => {
@@ -99,7 +115,11 @@ export class AppWebSocket {
 			this.handlers.set(type, set);
 		}
 		set.add(fn);
-		if (this.last.has(type)) fn(this.last.get(type));
+		if (type === msg.chatMsg) {
+			for (const message of this.chatMessages) fn(message);
+		} else if (this.last.has(type)) {
+			fn(this.last.get(type));
+		}
 
 		// return unsubscribe function
 		return () => set.delete(fn);

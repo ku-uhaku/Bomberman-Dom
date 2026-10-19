@@ -90,10 +90,10 @@ Validates nicknames (1–12 chars, unique, max 4 players), tracks players, and b
 Every chat message is broadcast by the server to all players in the room. History (last 50 messages) is replayed to a player when they join.
 
 ### Game
-Server-authoritative match loop. `beginGame(players, sendAll)` spawns a `World` and sends the initial map + spawn positions to all clients. Runs a 30Hz fixed-tick loop (`loopTick`) that advances the simulation and broadcasts state snapshots. When only one player remains, it fires `gameOver` → waits `roundEndMs` → calls `onEnd()` to hand control back to the `Room`.
+Server-authoritative match loop. `beginGame(players, sendAll)` spawns a `World` and sends the initial map + spawn positions to all clients. Runs a 60Hz fixed-tick loop (`loopTick`) that advances the simulation and broadcasts state snapshots. When only one player remains, it fires `gameOver` → waits `roundEndMs` → calls `onEnd()` to hand control back to the `Room`.
 
 ### World (server simulation)
-Owns players, bombs, explosions, blocks, and powerups. Each 30Hz tick:
+Owns players, bombs, explosions, blocks, and powerups. Each 60Hz tick:
 1. Places requested bombs
 2. Moves players from collected input movements
 3. Ticks bomb fuses; explodes bombs (blast range 2, 4 directions; walls block, blocks break)
@@ -102,7 +102,7 @@ Owns players, bombs, explosions, blocks, and powerups. Each 30Hz tick:
 6. Checks win condition (≤1 alive → `game_over`)
 
 ### Client
-Connects via WebSocket and sends movement directions and bomb requests. Receives authoritative state snapshots (~30Hz) and applies player positions when each snapshot arrives. The browser's `requestAnimationFrame` loop updates the FPS display and sprite animations; it does not simulate movement or interpolate player positions. The fixed 15×13 map is rendered as DOM cells (no canvas). Chat and HUD update from server messages.
+Connects via WebSocket and sends movement directions and bomb requests. Receives authoritative state snapshots (~60Hz) and applies player positions when each snapshot arrives. The browser's `requestAnimationFrame` loop updates the FPS display and sprite animations; it does not simulate movement or interpolate player positions. The fixed 15×13 map is rendered as DOM cells (no canvas). Chat and HUD update from server messages.
 
 ## Game Mechanics
 
@@ -127,18 +127,18 @@ Connects via WebSocket and sends movement directions and bomb requests. Receives
 | `chat_history` | server→client | Recent chat messages on join |
 | `chat` | server→client | New chat message broadcast |
 | `start` | server→client | Match beginning: map + spawn positions |
-| `state` | server→client | Simulation snapshot (~30Hz) |
+| `state` | server→client | Simulation snapshot (~60Hz) |
 | `game_over` | server→client | Winner declared |
 | `round_end` | server→client | Round over, back to lobby |
 
 The WebSocket endpoint requires a same-host `Origin`, caps messages at 4 KB and
-active connections at 128, and closes clients that exceed 120 messages per
-second. Chat is limited to 5 messages per second per connection.
+active connections at 32, and closes clients that exceed 5 messages per second
+per connection.
 
 ## Performance
 
 - `requestAnimationFrame` client render loop (60fps target)
-- 30Hz fixed-tick server simulation (`tickMs`)
+- 60Hz fixed-tick server simulation (`tickMs`)
 - Throttled DOM writes — `textContent` only changes when text actually changes
 - Player positions and game objects update from authoritative server snapshots
 - No canvas / WebGL; DOM-based rendering keeps paint and layer count minimal

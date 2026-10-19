@@ -135,8 +135,6 @@ main li:last-child {
 	right: 8px;
 	bottom: 8px;
 	width: 260px;
-	max-height: 400px;
-	overflow-y: auto;
 	z-index: 1;
 	background: rgba(33, 33, 35, 0.92);
 	border: 2px solid var(--muted);
@@ -150,11 +148,18 @@ main li:last-child {
 	align-content: start;
 }
 
+.chat-messages {
+	max-height: 160px;
+	overflow-y: auto;
+	grid-column: 1 / -1;
+}
+
 .chat p {
 	margin: 0;
 	padding: 1px 4px;
-	grid-column: 1 / -1;
 }
+
+.chat > .error { grid-column: 1 / -1; }
 
 .chat input {
 	min-width: 0;
@@ -168,4 +173,3 @@ main li:last-child {
 	flex-shrink: 0;
 	grid-column: 2;
 }
-

@@ -11,7 +11,7 @@ export class Game {
 
 		this.over = false;
 		this.roundTimer = null; // pause after game_over
-		this.loopTimer = null; // 30FPS
+		this.loopTimer = null; // 60FPS
 		this.loopAcc = 0;
 		this.loopLast = 0;
 		this.onEnd = null;

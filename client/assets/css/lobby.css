@@ -70,12 +70,13 @@
 	gap: 8px;
 }
 
-.lobby-panel::before {
+.lobby-page::before {
 	content: "";
-	position: absolute;
-	inset: 0;
-	background: var(--bg);
-	opacity: 0.01;
-	animation: idlePulse 1s linear infinite;
+	position: fixed;
+	left: 0;
+	top: 0;
+	width: 1px;
+	height: 1px;
+	background: var(--frame-color, #000);
 	pointer-events: none;
 }
