@@ -135,37 +135,37 @@ main li:last-child {
 	right: 8px;
 	bottom: 8px;
 	width: 260px;
+	max-height: 400px;
+	overflow-y: auto;
 	z-index: 1;
 	background: rgba(33, 33, 35, 0.92);
 	border: 2px solid var(--muted);
-}
-
-.chat-messages {
-	max-height: 160px;
-	overflow-y: auto;
-	padding: 4px;
 	font-size: 18px;
 	word-break: break-word;
+	padding: 4px;
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 4px;
+	box-sizing: border-box;
+	align-content: start;
 }
 
 .chat p {
+	margin: 0;
 	padding: 1px 4px;
-}
-
-.chat form {
-	display: flex;
-	gap: 4px;
-	padding: 4px;
+	grid-column: 1 / -1;
 }
 
 .chat input {
-	flex: 1;
 	min-width: 0;
 	padding: 4px;
+	grid-column: 1;
 }
 
 .chat button {
 	padding: 4px 8px;
 	font-size: 17px;
+	flex-shrink: 0;
+	grid-column: 2;
 }
 

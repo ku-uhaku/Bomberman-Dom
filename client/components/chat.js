@@ -1,11 +1,13 @@
 import { el, Component } from "../framework/index.js";
-import { msg, chatFade, chatMax } from "/shared/global.js";
+import { msg, chatMax } from "/shared/global.js";
 
 export class Chat extends Component {
 	constructor(props) {
-		super(props, { messages: [], value: "", error: "" });
+		super(props, { messages: [], error: "" });
 		this.unsubs = [];
 		this.listNode = null;
+		this.inputNode = null;
+		this.draft = "";
 	}
 
 	attach() {
@@ -28,56 +30,56 @@ export class Chat extends Component {
 		this.unsubs.forEach((off) => off());
 		this.unsubs = [];
 		this.listNode = null;
+		this.inputNode = null;
+		this.draft = "";
 	}
 
 	scroll() {
-		if (this.listNode) this.listNode.scrollTop = this.listNode.scrollHeight;
+		// defer until after the pending renderTree so the newest message is included
+		requestAnimationFrame(() => {
+			if (this.listNode) this.listNode.scrollTop = this.listNode.scrollHeight;
+		});
 	}
 
-	opacity(i) {
-		if (i >= chatFade) return 1;
-		if (this.state.messages.length <= chatFade) return 1;
-		return (i + 1) / chatFade;
+	send() {
+		const text = this.draft.trim();
+		if (!text) return;
+		this.state.error = "";
+		if (this.props.ws.sendMessage({ type: msg.chat, text })) {
+			this.draft = "";
+			if (this.inputNode) this.inputNode.value = "";
+		} else {
+			this.state.error = "not connected";
+		}
 	}
 
 	render() {
-		const { messages, value, error } = this.state;
-		return el("div", { class: "chat" }, [
-			el("div", {
-				class: "chat-messages",
-				ref: (n) => {
-					this.listNode = n;
-					this.scroll();
+		const { messages, error } = this.state;
+		// single .chat wrapper: messages keyed m0..mn, input/button/error
+		// carry fixed keys so the diff never recreates the focused input.
+		return el("div", {
+			class: "chat",
+			ref: (n) => {
+				this.listNode = n;
+				this.scroll();
+			},
+		}, [
+			...messages.map((m, i) =>
+				el("p", { key: `m${i}` }, `${m.nickname}: ${m.text}`)
+			),
+			error ? el("p", { key: "err", class: "error" }, error) : null,
+			el("input", {
+				key: "field",
+				oninput: (e) => {
+					this.draft = e.target.value;
+					if (this.state.error) this.state.error = "";
 				},
-			}, messages.map((m, i) =>
-				el("p", { key: i, style: `opacity:${this.opacity(i)}` }, `${m.nickname}: ${m.text}`)
-			)),
-			el("form", {
-				onsubmit: (e) => {
-					e.preventDefault();
-					// send
-					const text = this.state.value.trim();
-					if (!text) return;
-					this.state.error = "";
-					if (this.props.ws.sendMessage({ type: msg.chat, text })) {
-						this.state.value = "";
-					} else {
-						this.state.error = "not connected";
-					}
-				},
-			}, [
-				el("input", {
-					value,
-					oninput: (e) => {
-						this.state.error = "";
-						this.state.value = e.target.value;
-					},
-					placeholder: "say something…",
-					maxlength: chatMax,
-				}),
-				el("button", { type: "submit" }, "Send"),
-			]),
-			error ? el("p", { class: "error" }, error) : null,
+				onkeydown: (e) => { if (e.key === "Enter") this.send(); },
+				ref: (n) => { this.inputNode = n; n.value = this.draft; },
+				placeholder: "say something…",
+				maxlength: chatMax,
+			}),
+			el("button", { key: "send", onclick: () => this.send() }, "Send"),
 		]);
 	}
 }

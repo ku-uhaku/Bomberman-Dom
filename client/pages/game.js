@@ -281,7 +281,8 @@ export class GamePage extends Component {
 	}
 
 	movePlayer(node, x, y) {
-		node.style.transform = `translate(${x - tile / 2}px, ${y - tile / 2}px)`;
+		node.style.left = `${x - tile / 2}px`;
+		node.style.top = `${y - tile / 2}px`;
 	}
 
 	setFlip(id, node, flip) {

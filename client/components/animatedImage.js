@@ -1,6 +1,6 @@
 import { el, Component } from "../framework/index.js";
 
-const fps = 4;
+const fps = 2;
 const frameMs = 1000 / fps;
 
 export class AnimatedImage extends Component {
